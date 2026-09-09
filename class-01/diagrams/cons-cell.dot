@@ -1,0 +1,46 @@
+// cons-cell.dot — class-01.md「cons cell」那頁的圖
+// 重繪：dot -Tpng -Gdpi=160 cons-cell.dot -o cons-cell.png
+//
+// 配色沿用 class-01.md front-matter：外框 #1a1a2e，箭頭/標註 #4a90d9
+
+digraph cons_cell {
+  rankdir=LR;
+  bgcolor="transparent";
+  ranksep=0.40;
+  node [shape=plaintext, fontname="Menlo"];
+  edge [color="#4a90d9", penwidth=1.8, arrowsize=0.9];
+
+  // 第一格額外掛一列 car / cdr 標註
+  c1 [label=<
+    <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD>
+        <TABLE BORDER="0" CELLBORDER="1.8" CELLSPACING="0" CELLPADDING="10" COLOR="#1a1a2e">
+          <TR><TD PORT="car" WIDTH="40"><FONT POINT-SIZE="24">1</FONT></TD>
+              <TD PORT="cdr" WIDTH="40"><FONT POINT-SIZE="24">&#9679;</FONT></TD></TR>
+        </TABLE>
+      </TD></TR>
+      <TR><TD><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1">
+        <TR><TD WIDTH="60"><FONT POINT-SIZE="15" COLOR="#4a90d9">car</FONT></TD>
+            <TD WIDTH="60"><FONT POINT-SIZE="15" COLOR="#4a90d9">cdr</FONT></TD></TR>
+      </TABLE></TD></TR>
+    </TABLE>
+  >];
+
+  c2 [label=<
+    <TABLE BORDER="0" CELLBORDER="1.8" CELLSPACING="0" CELLPADDING="10" COLOR="#1a1a2e">
+      <TR><TD PORT="car" WIDTH="40"><FONT POINT-SIZE="24">2</FONT></TD>
+          <TD PORT="cdr" WIDTH="40"><FONT POINT-SIZE="24">&#9679;</FONT></TD></TR>
+    </TABLE>
+  >];
+
+  // 最後一格的 cdr 是 '()，鏈的終點
+  c3 [label=<
+    <TABLE BORDER="0" CELLBORDER="1.8" CELLSPACING="0" CELLPADDING="10" COLOR="#1a1a2e">
+      <TR><TD PORT="car" WIDTH="40"><FONT POINT-SIZE="24">3</FONT></TD>
+          <TD PORT="cdr" WIDTH="40"><FONT POINT-SIZE="22">'()</FONT></TD></TR>
+    </TABLE>
+  >];
+
+  c1:cdr -> c2:car;
+  c2:cdr -> c3:car;
+}
