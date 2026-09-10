@@ -1131,5 +1131,5 @@ Ch2 的 ADT、Ch3 的 `value-of`、Ch7 的 `type-of`。
 
 
 1. 直接寫 Email 問我問題。 Email: laurence@replware.dev
-2. Office Hour: 請跟我約週四上午直到上課前，我固定週四會來政大。
+2. Office Hour: 請跟我約週四下午 1:00~2:00 ，我固定週四會來政大。
 
