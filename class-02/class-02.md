@@ -675,6 +675,42 @@ List-of-Int ::= () | (Int . List-of-Int)
 
 ---
 
+<style scoped>
+  section { font-size: 24px; }
+  pre { font-size: 16px; }
+</style>
+
+# 補充：同一個 nil，兩種錯誤訊息
+
+```clojure
+(def users [{:name "Amy" :email "amy@nccu.edu.tw"}
+            {:name "Ben"}                              ; 忘了填 email
+            {:name "Cat" :email "cat@gmail.com"}])
+(defn domain-of [user] (second (str/split (:email user) #"@")))
+(frequencies (map domain-of users))   ; 統計各網域的人數
+```
+
+**沒有 spec**：錯誤指向 Java regex 的內部，看不出是哪位使用者出了問題
+
+```
+Execution error (NullPointerException) at java.util.regex.Matcher/getTextLength
+Cannot invoke "java.lang.CharSequence.length()" because "this.text" is null
+```
+
+**加上 spec**：指出是哪個函式、哪一筆資料、缺了什麼
+
+```
+;; (s/def ::email string?)
+;; (s/fdef domain-of :args (s/cat :user (s/keys :req-un [::email])))
+Execution error - invalid arguments to user/domain-of
+{:name "Ben"} - failed: (contains? % :email) at: [:user]
+```
+
+> 要讀懂一個 exception，需要足夠的 **context**：哪個函式、哪一筆資料、預期什麼。
+> 把這些 context 放進 exception，debug 就會容易得多。
+
+---
+
 # 補充：在 Clojure 裡，vector 拆得開
 
 Racket 的 vector 不能 `car`：
@@ -1080,7 +1116,8 @@ Nat  ::= 0 | (successor Nat)
 <br>
 
 第一句是 Ch1.2。
-第二句是 Ch1.3——也是這本書接下來七章反覆在做的事。
+第二句是 Ch1.3。之後的章節會有類似的事——
+Ch3 的 environment、Ch4 的 store，文法裡都沒有，都得自己造出來的。
 
 ---
 
