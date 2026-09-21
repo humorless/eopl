@@ -1078,3 +1078,6 @@ e
 
 1. Email: laurence@replware.dev
 2. Office Hour: 週四下午 1:00~2:00，請先跟我約
+3. 助教：邵振皓 (負責改作業、監考)
+4. 助教信箱：114971020@nccu.edu.tw
+5. **重要修改**：改用 Moodle 來收作業
