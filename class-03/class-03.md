@@ -506,9 +506,9 @@ $$⌈n⌉ = \begin{cases} () & n = 0 \\ (r\ .\ ⌈q⌉) & n = qN + r,\ 0 \leq r 
 ```racket
 (predecessor (zero))
 
-;; unary          => error: cdr of '()
+;; unary          => error: cdr: contract violation
 ;; scheme number  => -1
-;; bignum         => ?
+;; bignum         => error: car: contract violation
 ```
 
 ---
@@ -839,8 +839,8 @@ Env-exp ::= (empty-env)
   §2.2.2 資料結構表示法              §2.2.3 程序表示法
 
   ┌──────────────────────────┐      ┌──────────────────────────┐
-  │ ('extend-env x 7         │      │ #<procedure>             │
-  │   ('empty-env))          │      │                          │
+  │ (extend-env x 7          │      │ #<procedure>             │
+  │   (empty-env))           │      │                          │
   │                          │      │   裡面有 saved-var = x   │
   │  印得出來                │      │   saved-val = 7          │
   │  比得出相等              │      │   saved-env = #<proc>    │

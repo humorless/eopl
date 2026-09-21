@@ -1,0 +1,10 @@
+#lang eopl
+(require racket/include)
+(include "safe.rktl")
+(define zero        (lambda ()  0))
+(define is-zero?    (lambda (n) (zero? n)))
+(define successor   (lambda (n) (+ n 1)))
+(define predecessor (lambda (n) (- n 1)))
+(include "plus.rktl")
+(printf "scheme plus: ~s\n" (plus 2 1))
+(printf "scheme pred zero: ~s\n" (try (predecessor (zero))))

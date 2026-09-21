@@ -1,0 +1,25 @@
+#lang eopl
+(require racket/include)
+(include "safe.rktl")
+(define N 16)
+(define zero        (lambda ()  '()))
+(define is-zero?    (lambda (n) (null? n)))
+(define successor
+  (lambda (n)
+    (cond ((null? n) (list 1))
+          ((< (+ (car n) 1) N) (cons (+ (car n) 1) (cdr n)))
+          (else (cons 0 (successor (cdr n)))))))
+(define predecessor
+  (lambda (n)
+    (let ((r (- (car n) 1)))
+      (cond ((>= r 0) (if (and (= r 0) (null? (cdr n))) '() (cons r (cdr n))))
+            (else (cons (- N 1) (predecessor (cdr n))))))))
+(include "plus.rktl")
+(define (from-int k) (if (= k 0) (zero) (successor (from-int (- k 1)))))
+(define (to-int n) (if (null? n) 0 (+ (car n) (* N (to-int (cdr n))))))
+(printf "bignum plus '(2) '(1): ~s\n" (plus '(2) '(1)))
+(printf "bignum 33: ~s  258: ~s\n" (from-int 33) (from-int 258))
+(printf "bignum roundtrip 0..600 ok? ~s\n"
+        (let loop ((i 0)) (or (> i 600) (and (= (to-int (from-int i)) i) (loop (+ i 1))))))
+(printf "bignum plus 250+300 = ~s (~s)\n" (to-int (plus (from-int 250) (from-int 300))) (plus (from-int 250) (from-int 300)))
+(printf "bignum pred zero: ~s\n" (try (predecessor (zero))))
