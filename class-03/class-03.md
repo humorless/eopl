@@ -246,16 +246,24 @@ reader 讀到 tag，先讀後面的字串，再交給這個 tag 的 handler 解�
 
 ---
 
-# 同一個時間點，兩種寫法
-
-```clojure
-(= #inst "2026-09-21T09:30:00.000+08:00"
-   #inst "2026-09-21T01:30:00.000Z")
-;=> true
+# JSON 也能把 parse 移到邊界嗎？
+ 
+```javascript
+// 讀進來時，在邊界轉一次
+JSON.parse(wire, (k, v) =>
+  k.endsWith("At") && typeof v === "string" ? new Date(v) : v);
+ 
+// 寫出去時，對應的機制是 JSON.stringify 的 replacer
 ```
-
-edn spec 的 equality 節：兩個 `#inst` 只要字串依 RFC-3339 指向同一個時間點，就相等。
-
+ 
+* 照以上的作法的話：`daily-revenue`、`late-orders` 不必再自己 parse。
+* 但 reviver 要自己判斷哪個欄位是時間。範例裡，當 key 的名字結尾為 `At`，就判定該欄位為時間。=> **事先約定**。
+ 
+| | 如何提供「這是一個時間」這項資訊 |
+|---|---|
+| JSON + reviver | 讀寫雙方事先約定 |
+| edn + `#inst` | 訊息自己攜帶（tag 就在值的前面） |
+ 
 ---
 
 # 時間點的介面長什麼樣？
