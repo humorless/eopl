@@ -53,6 +53,15 @@ style: |
 **HW1 今天截止**，請確認已上傳 Moodle。
 
 ---
+# Neovim 與 Racket 
+
+;; 補充教材
+- Neovim + Conjure 就可以做 Racket 的 interactive development 
+- 要加一行小指令 `let g:conjure#client#racket#stdio#command = "racket -I eopl"` 
+- 參考用的 dotfiles:  https://github.com/humorless/dotfiles 
+- 教學：https://github.com/humorless/dotfiles/issues/14
+
+---
 
 # `(car (cadr exp))` 指的是什麼？
 
