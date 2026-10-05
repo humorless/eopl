@@ -221,9 +221,9 @@ p.59 提到另外兩條路：
 
 ---
 
-# "Parse, don't validate" 是什麼意思？
+# "Parse, don't validate" 是什麼意思？(補充教材)
 
-出處：Alexis King，2019 年的部落格文章 *Parse, don't validate*（課本外）。
+出處：Alexis King，2019 年的部落格文章 *Parse, don't validate*。
 
 我的轉述：檢查輸入時，把結果轉成一個新型別的值交出去。
 之後的程式只收這個型別，就不必再檢查一次。
@@ -666,7 +666,7 @@ in let y = 2
 
 ---
 
-# 按 `gd` 時發生了什麼？
+# 按 `gd` 時發生了什麼？(補充教材)
 
 conjure 是 Neovim 的外掛，可以在編輯器裡直接求值 Fennel、Clojure 等 Lisp 程式。
 
@@ -718,7 +718,7 @@ jump-to-def : 某個 symbol 出現的位置 → 定義它的位置
 | 遇到錯誤 | 報錯，拿不到 AST | 回傳含 ERROR 節點的樹 |
 | 輸出 | AST，型別由 `define-datatype` 定義（p.69） | 節點，型別以字串表示 |
 | 位置 | AST 裡沒有（p.60） | 每個節點帶 range |
-| client 怎麼取用 | 自己寫遞迴，用 `cases` 分派（pp.71–72） | 寫 pattern，取回 capture |
+| client 怎麼取用 | 自己寫遞迴，用 `cases` 分派（pp.71–72） | 寫 Query pattern，取回 capture |
 | context | environment 一路往下傳（p.57） | 比對時沒有；client 自己處理 |
 
 左欄依據課本；右欄是課本外的 tree-sitter 行為。
@@ -755,27 +755,6 @@ jump-to-def 要回傳的，正好就是位置。
 | 形狀的檢查發生在 | `scan&parse`，一次 | 每次 Query 比對時 |
 | 下游怎麼確認自己拿到什麼 | `cases expression` 的 variant | pattern 有沒有比對成功 |
 | 比對名稱的方式 | `apply-env` 依環境查找 | `(= code-text node-t.content)`（出自 PR） |
-
----
-
-# 演練一：手算、標綁定
-
-```
-1  let a = 3
-2  in let b = -(a,1)
-3     in let a = let b = -(b,a) in -(b,1)
-4        in -(a, b)
-```
-
-1. 用 p.62、p.67 的等式求出整體的值，再用 `run` 對答案。
-2. 對每一個變數使用處，標出它對應第幾行的哪一個 binder。
-3. 套用 H（使用處之前最後一個同名 binder），哪幾處會選錯？
-
-<!-- 答案：
-1. -4。b = 2；內層 b = -(2,3) = -1；a = -(-1,1) = -2；-(-2,2) = -4。
-2./3. 第 3 行 -(b,a)：b 應為第 2 行，H 選第 3 行內層 let b；a 應為第 1 行，H 選第 3 行 let a（它自己）。
-   第 3 行 -(b,1) 的 b：第 3 行內層 let b，H 相同。
-   第 4 行的 a：第 3 行 let a，H 相同；第 4 行的 b：應為第 2 行，H 選第 3 行內層 let b。 -->
 
 ---
 
@@ -819,7 +798,13 @@ p.75：這個程式造出一個「減 11」的程序，命名為 `f`，再對 77
 # 本日結論
 
 1. 前端把字串變成 AST；`value-of` 只處理 AST（p.71）
-2. 用途不同，介面就不同：直譯器用 `define-datatype` 與 `cases` 取用 AST；tree-sitter 服務編輯器工具，用 Query 比對樹的節點（我的解讀）
+2. 定義規格並實作一個語言，需要依序處理：
+   - syntax
+   - values
+   - environments
+   - behavior（rules 與 equations）
+   - `value-of` 的實作
+3. 用途不同，介面就不同：直譯器用 `define-datatype` 與 `cases` 取用 AST；tree-sitter 服務編輯器工具，用 Query 比對樹的節點（我的解讀）
 
 ---
 
