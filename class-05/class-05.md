@@ -626,12 +626,11 @@ in let y = 2
 2. 第四行 `-(x,y)` 裡的 `y` 是幾？
 3. 整體的值是多少？
 
-推導的寫法參考 Figure 3.5（p.68）。第 3 堂會再用到這個例子。
+推導的寫法參考 Figure 3.5（p.68）。
 
 <!-- 答案（p.67）：第三行的 x 綁定為 6，y 的值是 4，整體為 (-1) - 4 = -5。 -->
 
 ---
-
 
 # 等式怎麼變成 `cases` 分支？（Figures 3.8–3.9, pp.71–72）
 
@@ -645,6 +644,27 @@ in let y = 2
 | `(value-of (let-exp var exp1 body) ρ)` | `(let-exp (var exp1 body) ...)` |
 
 每條等式對應一個分支：等式右邊寫成分支的 body，ρ 寫成 `env`。
+
+---
+
+# `-(zero?(0), 1)` 的錯誤是誰抓到的？
+
+```racket
+> (scan&parse "-(zero?(0), 1)")
+#(struct:a-program
+  #(struct:diff-exp #(struct:zero?-exp #(struct:const-exp 0)) #(struct:const-exp 1)))
+
+> (run "-(zero?(0), 1)")
+expval-extractors: Looking for a num, found #(struct:bool-val #t)
+```
+
+問題：Figure 3.2（p.60）的 grammar 能不能排除這個程式？
+
+* grammar 規定的是形狀，`diff-exp` 的兩個運算元可以是任何 Expression。
+* 值的種類要等到 `expval->num` 被呼叫時才檢查（Figure 3.7, p.70）。
+* 第 1 堂的 "Parse, don't validate" 只管到形狀，管不到這一層。
+
+<!-- 答案：不能。scan&parse 成功回傳 AST；錯誤發生在 value-of 求 diff-exp 時，expval->num 收到 bool-val。 -->
 
 ---
 
