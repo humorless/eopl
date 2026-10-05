@@ -818,13 +818,13 @@ p.75：這個程式造出一個「減 11」的程序，命名為 `f`，再對 77
 # 本日結論
 
 1. 前端把字串變成 AST；`value-of` 只處理 AST（p.71）
-2. 定義規格並實作一個語言，需要依序處理：
+2. 定義一個語言的規格，需要依序處理：
    - syntax
    - values
    - environments
    - behavior（rules 與 equations）
-   - `value-of` 的實作
-3. 用途不同，介面就不同：直譯器用 `define-datatype` 與 `cases` 取用 AST；tree-sitter 服務編輯器工具，用 Query 比對樹的節點（我的解讀）
+3. 課本的作法：先定義語言的規格，最後再實作 `value-of`
+4. 用途不同，介面就不同：直譯器用 `define-datatype` 與 `cases` 取用 AST；tree-sitter 服務編輯器工具，用 Query 比對樹的節點（我的解讀）
 
 ---
 
