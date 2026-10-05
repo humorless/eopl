@@ -284,9 +284,9 @@ value-of : Exp × Env → ExpVal
 
 | 型別 | 意思 | 小節 |
 |---|---|---|
-| Exp | 程式長什麼樣 | 3.2.1（p.60） |
-| ExpVal | 結果可以是什麼 | 3.2.2（p.61） |
-| Env | 變數代表什麼 | 3.2.3（p.61） |
+| Exp | 程式長什麼樣 (Syntax) | 3.2.1（p.60） |
+| ExpVal | 結果可以是什麼 (Values) | 3.2.2（p.61） |
+| Env | 變數代表什麼 (Environments) | 3.2.3（p.61） |
 
 ---
 
@@ -540,13 +540,14 @@ p.63：`zero?` 是布林的 constructor，`if` 是布林的 observer。
 (value-of (if-exp exp1 exp2 exp3) ρ) = (value-of exp2 ρ)  若 (expval->bool val1) = #t
                                        (value-of exp3 ρ)  若 (expval->bool val1) = #f
 ```
+* 注意：推論規則的前提 `(value-of exp1 ρ) = val1` 代表了**子計算 (sub computation)**
 
 ---
 
 # 規則為什麼要改寫成等式？
 
 p.65：推論規則的前提代表一次子計算，串起來會是一棵樹（像 p.5 那棵），不好讀。
-改寫成等式，就能用「等量代換」一行一行往下寫。
+改寫成等式，就能用「等號代換」一行一行往下寫。
 
 ```
 (value-of (if-exp exp1 exp2 exp3) ρ)                    ; p.65
