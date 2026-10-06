@@ -421,6 +421,8 @@ p.63 說推導中會用到 ⌊⌈n⌉⌋ = n。
 
 # environment 的縮寫怎麼讀？（pp.61–62）
 
+p.61：environment 是函數，定義域是有限的變數集合，函數值都是 denoted values。
+
 | 縮寫 | 意思 |
 |---|---|
 | `ρ` | 任一個 environment |
@@ -461,6 +463,45 @@ p.62：每個以 Expression 為左邊的 production 對應一種 expression，�
 
 ---
 
+# 三個 observer，名字為什麼不一樣？
+
+| 型別 | observer | 出處 |
+|---|---|---|
+| ExpVal | `expval->num`、`expval->bool` | p.61；課本稱為 extractor（p.67） |
+| Exp | `value-of` | p.62 |
+| Env | `apply-env` | p.36；第三章沿用 §2.2 的 environment（p.69） |
+
+問題：只有 Env 的 observer 帶 `apply-` 字首。
+
+回想 class-03 讀過的 p.41：這個字首從哪來？
+
+<!-- 答案在下一張：p.36 的等式，以及 p.41 recipe 的第 2 步。 -->
+
+---
+
+# `apply-` 這個字首從哪來？
+
+p.36：environment 是函數。
+
+```
+(apply-env ⌈f⌉ var) = f(var)                              ; p.36
+```
+
+p.41 recipe 第 2 步：定義一個 `apply-` 程序（like apply-env above），
+把 client 裡「套用該型別的值」的地方，換成呼叫它。
+
+| 表示法 | observer | 出處 |
+|---|---|---|
+| 資料結構（§2.2.2） | `apply-env`，用 `cond` 分派 | p.38 |
+| 程序（§2.2.3） | `apply-env`，直接 `(env search-var)` | p.40 |
+
+我的解讀：`apply-X` 記錄的是介面層的一件事——課本把 X 當成函數，觀察它的方式是**套用 (apply)**。
+
+<!-- 講者備註：「X 是不是函數」是建模選擇。第四章 store 在規格裡是函數，
+正文的 observer 卻叫 deref（p.111）；apply-store 只出現在 Figure 4.6（p.116）。這堂不展開。 -->
+
+---
+
 # const、var、diff 三條等式（p.62）
 
 ```
@@ -477,6 +518,29 @@ p.62：每個以 Expression 為左邊的 production 對應一種 expression，�
 
 p.63：diff 這條要做兩件事——確認兩個運算元的值是數字，
 並把相減的結果包回 expressed value。
+
+---
+
+# var 這條等式，兩邊的值屬於哪個集合？
+
+```
+(value-of (var-exp var) ρ) = (apply-env ρ var)          ; p.62
+```
+
+| 式子 | 回傳 | 依據 |
+|---|---|---|
+| `(value-of exp ρ)` | ExpVal | p.62 寫出 `value-of : Exp × Env → ExpVal` |
+| `(apply-env ρ var)` | DenVal | 第三章沒寫簽名，由 p.61 推出 |
+
+推導（我的整理）：
+
+1. p.61：denoted values 是綁定到變數上的值
+2. p.61：environment 是函數，定義域是有限的變數集合，函數值都是 denoted values。
+3. 所以 `apply-env : Env × Var → DenVal`
+
+對照第二章 p.38：`apply-env : Env × Var → SchemeVal`
+
+等號兩邊一邊 ExpVal、一邊 DenVal。成立的依據在 p.61：這一章兩者相同。
 
 ---
 
@@ -673,7 +737,7 @@ expval-extractors: Looking for a num, found #(struct:bool-val #t)
 要算出一段 LET 程式的值，需要什麼？
 
 1. **一個函數**：`value-of : Exp × Env → ExpVal`（p.62）
-2. **三個型別**：Exp 是程式長什麼樣（p.60），ExpVal 是結果可以是什麼（p.61），Env 是變數代表什麼（p.61）
+2. **三個型別**：Exp 是程式長什麼樣（p.60），ExpVal 是結果可以是什麼（p.61），Env 把變數對應到 DenVal（p.61）；這一章 DenVal = ExpVal
 3. **每種 expression 一條規則**：語言一次長一個功能，數字與變數 → 布林 → let，每長一個功能就多幾條規則（pp.62–67）
 4. **每條規則對應一個 `cases` 分支**：等式右邊寫成分支的 body，ρ 寫成 `env`（pp.71–72）
 
