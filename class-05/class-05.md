@@ -55,7 +55,7 @@ style: |
 |---|---|
 | 第 1 堂 | §3.1 前端：scanning 與 parsing（pp.57–59）；parse 與 validate |
 | 第 2 堂 | §3.2 LET 的規格與實作（pp.60–72） |
-| 第 3 堂 | Fennel 的 jump-to-def：tree-sitter 與直譯器；兩個隨堂演練 |
+| 第 3 堂 | Fennel 的 jump-to-def：tree-sitter 與直譯器；一個隨堂演練 |
 
 ---
 
