@@ -286,7 +286,7 @@ p.76 的兩點：
 | `(value-of (call-exp rator rand) ρ)` | `(apply-procedure (expval->proc (value-of rator ρ)) (value-of rand ρ))` | p.76 |
 | `(apply-procedure (procedure var body ρ) val)` | `(value-of body [var=val]ρ)` | p.76 |
 
-call-exp 那一列把 p.76 的 `let` 展開寫成一行。
+我的解讀：call-exp 呼叫 `apply-procedure`，`apply-procedure` 又呼叫 `value-of`，兩者交互遞迴。LET 的 `value-of` 只對子運算式遞迴；PROC 的 `apply-procedure` 求值的 body 不是子運算式。
 
 ---
 
