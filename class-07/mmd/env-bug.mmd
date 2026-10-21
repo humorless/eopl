@@ -1,0 +1,7 @@
+graph LR
+  c2["查 double 得到的 closure<br/>(procedure x body _)"]
+  r1b["ρ1<br/>extend-env-rec double x body"]
+  r0b["ρ0 = [i=1, v=5, x=10]<br/>沒有 double"]
+  c2 ~~~ r1b
+  r1b -->|saved-env| r0b
+  c2 -->|"_ = saved-env"| r0b

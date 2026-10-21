@@ -1,0 +1,10 @@
+graph LR
+  co["odd 的 closure"]
+  ce["even 的 closure"]
+  r2["ρ2<br/>extend-env-rec odd"]
+  r1["ρ1<br/>extend-env-rec even"]
+  r0["ρ0 = [i=1, v=5, x=10]"]
+  co -->|env| r2
+  ce -->|env| r1
+  r2 -->|saved-env| r1
+  r1 -->|saved-env| r0
