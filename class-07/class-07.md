@@ -55,12 +55,12 @@ style: |
 |---|---|
 | 第 1 堂 | §3.4 LETREC 的規格（pp.82–85） |
 | 第 2 堂 | Figure 3.12 的實作與現場跑（p.83、p.86） |
-| 第 3 堂 | 兩個隨堂演練、mutual recursion、HW3 提醒 |
+| 第 3 堂 | 隨堂演練、mutual recursion、為什麼改 `let` 而不是 `proc` |
 
 <!-- 講者備註：
 第 1 堂：概念 5 個、停下來想 4 處（第 5、16、17、21 張）、約 50 分鐘
 第 2 堂：概念 3 個、停下來想 2 處（第 27、28 張）、約 35–40 分鐘
-第 3 堂：概念 3 個、停下來想 1 處（第 42 張）、約 50 分鐘 -->
+第 3 堂：概念 4 個、停下來想 3 處（第 40、43、45 張）、約 50 分鐘 -->
 
 ---
 
@@ -619,7 +619,7 @@ closure 要等到 `apply-env` 查到 `p-name` 時才組出來（我對 Figure 3.
 <!-- _class: lead -->
 
 # 第 3 堂
-## 兩個隨堂演練 ＋ mutual recursion
+## 隨堂演練 ＋ mutual recursion
 
 ---
 
@@ -627,55 +627,15 @@ closure 要等到 `apply-env` 查到 `p-name` 時才組出來（我對 Figure 3.
 
 | 時間 | 內容 |
 |---|---|
-| 0–10 分 | 演練一：Exercise 3.30 |
-| 10–25 分 | 演練二：用 `letrec` 寫 `sum` |
-| 25–35 分 | 分組討論，抽一組上台 |
-| 35–45 分 | mutual recursion：兩個 `letrec` 疊起來 |
+| 0–12 分 | 隨堂演練：用 `letrec` 寫 `sum` |
+| 12–22 分 | 分組討論，抽一組上台 |
+| 22–32 分 | mutual recursion：兩個 `letrec` 疊起來 |
+| 32–45 分 | 為什麼改的是 `let`，而不是 `proc`？ |
 | 45–50 分 | HW3 提醒、下週預告 |
 
 ---
 
-# 演練一：Exercise 3.30 [★]（p.83）
-
-Figure 3.12 的 `apply-env` 倒數第二行：
-
-```racket
-(proc-val (procedure b-var p-body env))
-```
-
-p.83 的題目：這裡呼叫 `proc-val` 的目的是什麼？
-
-提示：p.75 寫了 PROC 的 ExpVal 與 DenVal。`apply-env` 回傳的東西，要交給誰用？
-
----
-
-# 演練一：對答案
-
-p.75：
-
-```
-ExpVal = Int+Bool+Proc
-DenVal = Int+Bool+Proc
-```
-
-`procedure` 建出來的是 Proc；環境裡的值、`var-exp` 的結果、`call-exp` 裡 `expval->proc` 收到的，都是 expval。
-
-現場拿掉 `proc-val` 重跑：
-
-```racket
-(procedure b-var p-body env)   ; proc-val removed
-```
-
-```racket
-> (run "letrec double(x) = ... in (double 6)")
-cases: not a expval: #(struct:procedure x ...)
-```
-
-<!-- 錯誤來自 call-exp 分支裡的 expval->proc：它對收到的值做 (cases expval ...)，但收到的是 proc。示範完記得改回。 -->
-
----
-
-# 演練二：用 `letrec` 寫 `sum`
+# 隨堂演練：用 `letrec` 寫 `sum`
 
 寫一個 LETREC 程式：`(sum n)` 回傳 0 + 1 + ⋯ + n。
 
@@ -690,7 +650,7 @@ LETREC 沒有加法。提示沿用 class 6 演練一（p.80）：`x + y` 可以�
 
 ---
 
-# 演練二：用 `run` 對答案
+# 隨堂演練：用 `run` 對答案
 
 ```racket
 > (run "letrec sum(n) = if zero?(n)
@@ -713,7 +673,7 @@ LETREC 沒有加法。提示沿用 class 6 演練一（p.80）：`x + y` 可以�
 
 # 分組討論
 
-1. 分成 3 組，討論演練二：
+1. 分成 3 組，討論隨堂演練：
    - 你們的寫法和投影片的一樣嗎？
    - 把 `(sum 4)` 換成 `(sum 0)`，用 Figure 3.10 的方式算前三步
 2. 10 分鐘後，抽一組上台發表。
@@ -756,7 +716,7 @@ apply-env: No binding for odd
 
 把兩層對調（外層 `odd`、內層 `even`），錯誤訊息變成 `No binding for even`。
 
-<!-- 外層程序的 closure 存的是外層的 extend-env-rec，裡面沒有內層的名字。不論怎麼疊，總有一個方向查不到。這正是 3.32 要解決的問題，不在課堂上給解法。 -->
+<!-- 外層程序的 closure 存的是外層的 extend-env-rec，裡面沒有內層的名字。照「外層 letrec 的 in 裡放內層 letrec」這種疊法，總有一個方向查不到。（把 odd 的 letrec 放進 even 的 body 裡則跑得動，例如 (even 12) 得 (num-val 1)，已實測；但 odd 只能從 even 裡面呼叫。）這正是 3.32 要解決的問題，不在課堂上給解法。 -->
 
 ---
 
@@ -774,6 +734,85 @@ apply-env: No binding for odd
 `(odd 13)` 呼叫 `even` 沒問題；`even` 再呼叫 `odd` 時，從 ρ1 開始找，找不到。
 
 <!-- 圖的原始碼：img/nested-letrec.mmd（Mermaid），設定檔 img/config.json。 -->
+
+---
+
+# 為什麼遞迴改的是 `let`，而不是 `proc`？
+
+`let` 版的 `double` 失敗了（第 3 張），修正的方式是把 `let` 換成 `letrec`。
+那為什麼不改 `proc`？這個問題可以拆成兩個：
+
+| 子問題 | 有沒有回答 |
+|---|---|
+| 為什麼不改 `proc` 的**實作**？ | 第 32 張：`proc-exp`、`call-exp`、`apply-procedure`、`proc` datatype 都沒改，改的是環境 |
+| 為什麼不改 `proc` 的**語法**？ | 還沒回答 |
+
+---
+
+# 遞迴到底需要什麼？
+
+（這張是我的歸納。）一個程序要呼叫自己，body 執行時必須用某個名字查到這個程序本身。拆開來需要三樣東西：
+
+| | 條件 | 由誰負責 |
+|---|---|---|
+| 1 | 一個名字 | 語法：PROC 的 `proc (x) ...` 是匿名的 |
+| 2 | 這個名字綁到這個 closure | 環境 |
+| 3 | 這個綁定，要在 closure **自己存的**環境裡 | 環境 |
+
+**停下來想**：第 3 張 `let` 版的 `double`，三個條件缺了哪一個？
+
+<!-- 答案：缺第 3 個。名字有（double），綁定也有（[double=...]ρ0），但 closure 存的是 ρ0（第 5 張），綁定不在 closure 自己存的環境裡。
+第 3 個條件代表 closure 的環境裡要有 closure 本身，形成一個環。 -->
+
+---
+
+# 誰負責把 closure 放進它自己的環境？
+
+（這張是我的解讀。）條件 3 要求 closure 和綁定在同一個時刻一起建出來。這個時刻可以放在兩個地方：
+
+| | 在 binding form 上做 | 在 `proc` 上做 |
+|---|---|---|
+| 語法 | `letrec f(x) = body in ...` | `proc f (x) body`（具名 proc） |
+| 誰觸發 | 綁定結構 | 程序結構 |
+| 環境 | `extend-env-rec` | 一樣需要 `extend-env-rec` 這種環境 |
+| 例子 | Scheme／Racket 的 `letrec` | Clojure 的 `(fn fact [n] ...)`、JavaScript 的具名函式表達式 |
+
+具名 proc 不在 LETREC 裡，下一張用規則 1 推推看它行不行。
+
+---
+
+# 如果改 `proc`，等式會長什麼樣？
+
+假設語言多一個 `named-proc-exp`（課本沒有，是我假設的）：
+
+```
+Expression ::= proc Identifier (Identifier) Expression
+               named-proc-exp (p-name b-var body)
+```
+
+**停下來想**：closure 的環境裡要有 `p-name` 綁到自己。借用 `extend-env-rec`，用規則 1（p.83）推下去：
+
+```
+(value-of (named-proc-exp p-name b-var body) ρ)
+  = (apply-env (extend-env-rec p-name b-var body ρ) p-name)
+  = (proc-val (procedure b-var body
+                (extend-env-rec p-name b-var body ρ)))     ; rule 1
+```
+
+對照第 30 張 `letrec f(x) = x in f` 的 REPL 輸出：結構相同。
+
+<!-- 結論：proc f (x) body 的值，等於 letrec f(x) = body in f 的值。所以「改 proc」行得通，核心一樣是 extend-env-rec。 -->
+
+---
+
+# EOPL 為什麼選 `letrec`？
+
+課本 §3.4 沒有說明這個選擇。以下是我的解讀，依可信度排序：
+
+1. **mutual recursion**：具名 proc 一次只引入一個名字。要讓 `even`、`odd` 同時對彼此可見、又都能從外面呼叫，需要一次宣告多個名字的結構，這正是 Exercise 3.32（p.84）要做的。`letrec` 可以自然延伸到多個名字。
+2. **Scheme 的傳統**：Scheme 本來就用 `letrec`。
+
+反對論點：具名 proc 本身是一個 expression，可以直接當參數傳出去；`letrec` 要多包一層 `letrec f(x) = ... in f`。兩種設計各有取捨。
 
 ---
 
@@ -805,11 +844,11 @@ in (double 6)
 
 # 本日結論
 
-1. letrec-body 在 `(extend-env-rec ...)` 裡求值；`extend-env-rec` 的行為只用 `apply-env` 的兩條規則規定（p.83）
-2. 查 `proc-name` 時，closure 的環境是 ρ1 本身（p.83）
-3. Figure 3.12 在查詢時才組 closure，所以建 ρ1 不會無限展開（p.86）
-4. 從 PROC 到 LETREC，改的是環境，程序相關的程式碼沒有改（我的整理）
-5. 疊兩層 `letrec` 寫不出 mutual recursion，Exercise 3.32 處理這件事（p.84）
+1. letrec-body 在 `(extend-env-rec ...)` 裡求值；查 `proc-name` 時，closure 的環境是 ρ1 本身，查其他變數則交給 ρ（p.83）
+2. Figure 3.12 在查詢時才組 closure，所以建 ρ1 不會無限展開（p.86）
+3. 遞迴需要 closure 自己存的環境裡有它自己的名字；所以從 PROC 到 LETREC，改的是環境，程序的程式碼沒有改（我的整理）
+4. 在外層 `letrec` 的 `in` 裡疊內層 `letrec`，寫不出 mutual recursion；Exercise 3.32 處理這件事（p.84）
+5. 要讓 closure 存的環境裡有它自己的名字，可以用 `letrec`，也可以用具名 `proc`，兩者的核心都是 `extend-env-rec`；EOPL 為什麼選 `letrec`，課本沒有說明（我的解讀：一次宣告多個名字，方便 mutual recursion）
 
 ---
 
