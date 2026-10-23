@@ -59,7 +59,7 @@ style: |
 
 <!-- 講者備註：
 第 1 堂：概念 5 個、停下來想 4 處（第 5、16、17、21 張）、約 50 分鐘
-第 2 堂：概念 3 個、停下來想 2 處（第 27、28 張）、約 35–40 分鐘
+第 2 堂：概念 3 個、停下來想 2 處（第 28、29 張）、約 35–40 分鐘
 第 3 堂：概念 4 個、停下來想 3 處（第 40、43、45 張）、約 50 分鐘 -->
 
 ---
@@ -439,6 +439,31 @@ class 3 的對照：
 
 ---
 
+# letrec 的等式，翻成程式碼長什麼樣？
+
+對照第 10 張的等式。下面取自課本官方 repo 的 `chapter3/letrec-lang/interp.scm`（§3.4 正文只給等式，p.83）：
+
+```racket
+(define value-of
+  (lambda (exp env)
+    (cases expression exp
+      ...
+      (letrec-exp (p-name b-var p-body letrec-body)
+        (value-of letrec-body
+          (extend-env-rec p-name b-var p-body env)))
+      ...)))
+```
+
+| 等式 | 程式碼 | |
+|---|---|---|
+| `proc-name`、`bound-var`、`proc-body` | `p-name`、`b-var`、`p-body` | 只是縮寫 |
+| ρ | `env` | 這個 `env` 是 ρ，不是 ρ1；它是 `value-of` 的參數（第 28 張 `apply-env` 裡的 `env` 是另一個函式的參數） |
+
+<!-- 重點（我的解讀）：程式碼是等式逐字翻譯過來的，和 class 6「先寫等式、再寫程式」是同一個模式。
+(letrec-exp (p-name ...) ...) 是 cases 的一個分支：括號裡的四個名字，是從 letrec-exp 的四個欄位取出來的。 -->
+
+---
+
 # Figure 3.12：environment 多一個 variant（p.86）
 
 ```racket
@@ -571,24 +596,6 @@ closure 要等到 `apply-env` 查到 `p-name` 時才組出來（我對 Figure 3.
     (extend-env 'v (num-val 5) (extend-env 'x (num-val 10) (empty-env)))))))
 ```
 
-
----
-
-# value-of 的 letrec-exp 分支
-
-§3.4 正文只給等式（p.83）；下面的程式碼取自課本官方 repo 的 `chapter3/letrec-lang/interp.scm`。
-
-```
-(value-of (letrec-exp proc-name bound-var proc-body letrec-body) ρ)
-  = (value-of letrec-body
-              (extend-env-rec proc-name bound-var proc-body ρ))
-```
-
-```racket
-(letrec-exp (p-name b-var p-body letrec-body)
-  (value-of letrec-body
-    (extend-env-rec p-name b-var p-body env)))
-```
 
 ---
 
@@ -799,7 +806,7 @@ Expression ::= proc Identifier (Identifier) Expression
                 (extend-env-rec p-name b-var body ρ)))     ; rule 1
 ```
 
-對照第 30 張 `letrec f(x) = x in f` 的 REPL 輸出：結構相同。
+對照第 31 張 `letrec f(x) = x in f` 的 REPL 輸出：結構相同。
 
 <!-- 結論：proc f (x) body 的值，等於 letrec f(x) = body in f 的值。所以「改 proc」行得通，核心一樣是 extend-env-rec。 -->
 
