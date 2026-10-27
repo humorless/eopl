@@ -1,0 +1,12 @@
+flowchart LR
+  D1["(let ((x 3) (y 4)) ...)<br/>declares x1, y"]
+  subgraph S1["scope of x1, y"]
+    direction LR
+    D2["(let ((x (+ y 5))) ...)<br/>declares x2"]
+    subgraph S2["scope of x2"]
+      B["(* x y)<br/>x refers to x2"]
+    end
+    A["the last x<br/>refers to x1"]
+  end
+  D1 --> S1
+  D2 --> S2
