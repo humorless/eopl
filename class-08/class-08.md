@@ -1025,7 +1025,7 @@ in let double = proc (x) if zero?(x) then 0 else -((double -(x,1)), -2)
 2. lexical address 是往外穿過的 contour 數（p.91）；translator 用只存名字的 senv 算出它，interpreter 用只存值的 nameless env 照位置取值（pp.94–100）
 3. 兩邊的順序要對齊，對不齊時沒有錯誤訊息，只有錯的答案（實測）
 4. 翻譯是執行前的一個 phase；它走訪整棵樹，所以連不會被執行的分支裡「找不到 declaration」的錯也抓得到，測試只檢查被執行到的分支（實測）
-5. 它抓不到「對到錯的 declaration」；這要靠畫 contour、從 reference 往外找（我的解讀）
+5. 翻譯抓不到「對到錯的 declaration」，因為作者想對到哪一個，不寫在程式裡（我的解讀）
 
 ---
 
