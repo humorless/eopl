@@ -554,7 +554,7 @@ p.94：名字用 `%` 開頭，因為 `%` 在這個語言裡通常是註解字元
 
 # static environment（Figure 3.15, pp.94–95）
 
-p.94：要算 lexical address，得知道目前被哪些 scope 包住。這是 context 資訊，像 §1.3 的 inherited attribute（class 2 的 context argument）。
+p.94：要計算某個 reference 的 lexical address，得先知道它被哪些 scope 包住。這是 context 資訊，像 §1.3 的 inherited attribute（class 2 的 context argument）。
 
 ```racket
 ;; Senv = Listof(Sym),  Lexaddr = N
