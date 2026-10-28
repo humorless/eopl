@@ -1006,7 +1006,7 @@ if zero?(0) then 1 else foo
 
 | | 前提 | 不成立時 |
 |---|---|---|
-| 1 | 每個 reference 對應哪個 declaration，只看程式文字就能決定 | dynamic binding：對應關係要看呼叫者（第 18 張，Ex 3.28, p.82） |
+| 1 | 每個 reference 對應哪個 declaration，只看程式文字就能決定 | dynamic scoping：對應關係要看呼叫者（第 18 張，Ex 3.28, p.82） |
 | 2 | translator 知道每個可能的 declaration，包括初始環境裡的名字 | `init-senv` 與 `init-nameless-env` 對不齊時，答案錯（第 43 張） |
 
 前提 1 是 §3.5 的 lexical scoping；前提 2 在課本裡由 `init-senv`（p.96）負責。
@@ -1074,12 +1074,11 @@ translator 都沒有報錯。`proc` body 的翻譯結果，一個是 `(diff-exp 
 
 ---
 
-# HW4：三個題號
+# HW4：兩個題號
 
 | 題號 | 內容 | 難度 | 頁碼 |
 |---|---|---|---|
 | 3.37 | dynamic binding 下，用 `let` 寫遞迴；再寫 `even`、`odd` | ★ | p.87 |
-| 3.38 | lexical address translator 與 interpreter 加上 `cond`（先完成 3.12 [★], p.73） | ★ | p.101 |
 | 3.40 | lexical address translator 與 interpreter 加上 `letrec` | ★★ | p.101 |
 
 **繳交期限：week 10 上課前，上傳 Moodle。**
@@ -1094,9 +1093,7 @@ week 9 是期中考。3.40 同時用到 class 7 與今天的內容，可以先�
 
 # 每題的補充說明
 
-**3.37**：建在 3.28 的參考解上（HW3 截止後公布），只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18 張：dynamic binding 下，reference 對到哪個 declaration 要看呼叫者。
-
-**3.38**：lexaddr-lang 沒有 `cond`，grammar、translator、interpreter 都要改。練的是第 32 張：不引入新變數的結構，子節點用同一個 senv 翻譯。
+**3.37**：建立在 3.28 的參考解上，只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18 張：dynamic scoping 下，reference 對到哪個 declaration 要看呼叫者。
 
 **3.40**：lexaddr-lang 的 grammar 沒有 `letrec`，production 要自己加。另附一個測試：遞迴程序的 closure 若建在錯的環境，這個測試會失敗（對照 class 7 把 `env` 改成 `saved-env`）。練的是引入新變數時 senv 怎麼擴充，以及第 42–43 張的兩邊對齊。
 
@@ -1112,11 +1109,11 @@ in let double = proc (x) if zero?(x) then 0 else -((double -(x,1)), -2)
 
 # 本日結論
 
-1. reference 對應哪個 declaration，在 lexical scoping 下是 static property，方法是從 reference 往外找（p.88）；dynamic binding 下要看呼叫者（Ex 3.28, p.82）
+1. reference 對應哪個 declaration，在 lexical scoping 下是 static property，方法是從 reference 往外找（p.88）；dynamic scoping 下要看呼叫者（Ex 3.28, p.82）
 2. lexical address 是往外穿過的 contour 數（p.91）；translator 用只存名字的 senv 算出它，interpreter 用只存值的 nameless env 照位置取值（pp.94–100）
 3. 兩邊的順序要對齊，對不齊時沒有錯誤訊息，只有錯的答案（實測）
 4. 翻譯是執行前的一個 phase；它走訪整棵樹，所以連不會被執行的分支裡「找不到 declaration」的錯也抓得到，測試只檢查被執行到的分支（實測）
-5. 翻譯抓不到「對到錯的 declaration」，因為作者想對到哪一個，不寫在程式裡（我的解讀）
+5. 翻譯抓不到「對到錯的 declaration」，因為「變數對應到哪一個  declaration」，作者在程式裡已經寫錯了。（我的解讀）
 
 ---
 
