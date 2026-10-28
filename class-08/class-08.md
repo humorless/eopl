@@ -59,9 +59,9 @@ style: |
 
 <!-- 講者備註：
 第 1 堂：概念 9 個、停下來想 2 處（第 4、13 張）、約 47 分鐘
-第 2 堂：概念 6 個、停下來想 2 處（第 32、40 張）、約 50 分鐘
-第 3 堂：概念 5 個、停下來想 2 處（第 45、48 張）、約 40 分鐘
-超時時：把第 45–46 張移到第 2 堂末尾。 -->
+第 2 堂：概念 6 個、停下來想 1 處（第 42 張）、約 50 分鐘
+第 3 堂：概念 5 個、停下來想 2 處（第 47、50 張）、約 40 分鐘
+超時時：把第 47–48 張移到第 2 堂末尾。 -->
 
 ---
 
@@ -552,9 +552,31 @@ p.94：名字用 `%` 開頭，因為 `%` 在這個語言裡通常是註解字元
 
 ---
 
-# static environment（Figure 3.15, pp.94–95）
+# §3.7.1 The Translator（pp.94–96）
 
-p.94：要計算某個 reference 的 lexical address，得先知道它被哪些 scope 包住。這是 context 資訊，像 §1.3 的 inherited attribute（class 2 的 context argument）。
+p.94：要計算某個 reference 的 lexical address，得先知道它被哪些 scope 包住。這是 context 資訊，像 §1.3 的 inherited attribute（class 2 的 context argument）。所以 `translation-of` 收兩個參數：一個 expression 和一個 static environment。
+
+```racket
+;; translation-of-program : Program → Nameless-program
+(define translation-of-program
+  (lambda (pgm)
+    (cases program pgm
+      (a-program (exp1)
+        (a-program
+          (translation-of exp1 (init-senv)))))))
+
+;; init-senv : () → Senv
+(define init-senv
+  (lambda ()
+    (extend-senv 'i
+      (extend-senv 'v
+        (extend-senv 'x
+          (empty-senv))))))
+```
+
+---
+
+# static environment（Figure 3.15, pp.94–95）
 
 ```racket
 ;; Senv = Listof(Sym),  Lexaddr = N
@@ -570,7 +592,7 @@ p.94：要計算某個 reference 的 lexical address，得先知道它被哪些 
       (else (+ 1 (apply-senv (cdr senv) var))))))
 ```
 
-p.94：第一個元素是最內層的變數。senv 是 `(z y x)` 時，查 `x`、`y`、`z` 各得 2、1、0。`apply-senv` 回傳**位置**，`apply-env` 回傳**值**。
+p.94：第一個元素是最內層的變數。senv 是 `(z y x)` 時，查 `x`、`y`、`z` 各得 2、1、0。p.94 的這個例子沒有算進 `init-senv`。`apply-senv` 回傳**位置**，`apply-env` 回傳**值**。
 
 ---
 
@@ -579,6 +601,7 @@ p.94：第一個元素是最內層的變數。senv 是 `(z y x)` 時，查 `x`�
 翻譯就是把樹複製一份（像 Ex 1.33、2.26），只有三種節點要換（pp.95–96）：
 
 ```racket
+;; translation-of : Exp × Senv → Nameless-exp  (p.97)
 (var-exp (var)
   (nameless-var-exp (apply-senv senv var)))
 (let-exp (var exp1 body)
@@ -592,27 +615,33 @@ p.94：第一個元素是最內層的變數。senv 是 `(z y x)` 時，查 `x`�
 
 其他節點（`const-exp`、`diff-exp`、`zero?-exp`、`if-exp`、`call-exp`）照樣複製，子節點用同一個 `senv` 翻譯（p.97）。
 
-p.96：翻譯一個程式時，起點是 `init-senv`，也就是 `(i v x)`。
+---
+
+<!-- _class: small -->
+
+# senv 怎麼長出來（p.93 的程式）
+
+```
+let x = 37 in proc (y) let z = -(y,x) in -(x,y)
+```
+
+| 翻譯到哪裡 | 當時的 senv | 怎麼來的 |
+|---|---|---|
+| 程式一開始 | `(i v x)` | `init-senv`（p.96） |
+| `let x` 的右手邊 `37` | `(i v x)` | 右手邊用同一個 senv |
+| `let x` 的 body | `(x i v x)` | `extend-senv 'x` |
+| `proc (y)` 的 body | `(y x i v x)` | `extend-senv 'y` |
+| `-(y,x)` | `(y x i v x)` | `y`→0，`x`→1 |
+| `let z` 的 body | `(z y x i v x)` | `extend-senv 'z` |
+| `-(x,y)` | `(z y x i v x)` | `x`→2，`y`→1 |
+
+前面的 `x`、`y`、`z` 是 translator 走過程式時自己加的；尾端的 `(i v x)` 是 `init-senv`：語言預先提供、程式不必宣告就能用的名字。
+
+senv 裡有兩個 `x`：`apply-senv` 先找到前面那個，也就是 `let x = 37` 宣告的。
 
 ---
 
-# 動手翻譯 p.93 的程式
-
-```
-let x = 37
-in proc (y)
-     let z = -(y,x)
-     in -(x,y)
-```
-
-**停下來想**：用上一張的三條規則，在紙上寫出翻譯結果。
-
-1. `-(y,x)` 翻譯時，senv 是什麼？兩個 reference 各得幾？
-2. `-(x,y)` 翻譯時，senv 是什麼？兩個 reference 各得幾？
-
----
-
-# 對答案：用 `translation-of-program`
+# 用 `translation-of-program` 驗證
 
 ```racket
 > (translation-of-program
@@ -626,14 +655,35 @@ in proc (y)
     (diff-exp (nameless-var-exp 2) (nameless-var-exp 1))))))
 ```
 
-| 哪個式子 | senv | 結果 |
-|---|---|---|
-| `-(y,x)` | `(y x i v x)` | `y`→0，`x`→1 |
-| `-(x,y)` | `(z y x i v x)` | `x`→2，`y`→1 |
-
 p.93 印成 `#(struct:a-program ...)`，Racket 8 的 REPL 印成 constructor 形式；結構相同。
 
-<!-- 兩個 senv 的尾端都有 init-senv 的 (i v x)。注意 senv 裡出現兩個 x：前面那個是 let x = 37 宣告的，apply-senv 先找到它。 -->
+
+---
+
+<!-- _class: small -->
+
+# §3.7.2 The Nameless Interpreter（p.100）
+
+`value-of` 收兩個參數：nameless 程式和 nameless environment。起點是 `init-nameless-env`。
+
+```racket
+;; value-of-program : Nameless-program → ExpVal  (p.100)
+(define value-of-program
+  (lambda (pgm)
+    (cases program pgm
+      (a-program (exp1)
+        (value-of exp1 (init-nameless-env))))))
+
+;; init-nameless-env : () → Nameless-env  (repo's environments.scm)
+(define init-nameless-env
+  (lambda ()
+    (extend-nameless-env (num-val 1)            ; was i
+      (extend-nameless-env (num-val 5)          ; was v
+        (extend-nameless-env (num-val 10)       ; was x
+          (empty-nameless-env))))))
+```
+
+課本沒有給 `init-nameless-env` 的程式碼，以上是 repo 的版本；它的 contract 是我照 repo 補的。
 
 ---
 
@@ -663,26 +713,6 @@ p.98 寫 DenVal，Figure 3.17 寫 ExpVal；本章兩者相同（p.61）。
 
 ---
 
-# `apply-procedure` 少了什麼？（p.76、p.98）
-
-| | 等式 |
-|---|---|
-| PROC（p.76） | `(apply-procedure (procedure var body ρ) val)`<br>`= (value-of body [var=val]ρ)` |
-| lexaddr-lang（p.98） | `(apply-procedure (procedure body ρ) val)`<br>`= (value-of body (extend-nameless-env val ρ))` |
-
-p.98：新規格就是舊的拿掉變數名字（lexaddr-lang 這條的 ρ 是 nameless environment），所以 `proc` 少一欄：
-
-```racket
-(define-datatype proc proc?
-  (procedure
-    (body expression?)
-    (saved-nameless-env nameless-environment?)))
-```
-
-p.98：用到環境的只有 procedure 和 `value-of` 兩處。
-
----
-
 # Figure 3.18：`value-of` 的三個新分支（p.100）
 
 ```racket
@@ -701,6 +731,26 @@ p.98：用到環境的只有 procedure 和 `value-of` 兩處。
 p.99：其他分支和以前一樣，只是 `env` 換成 `nameless-env`。
 
 p.100：遇到 `var-exp`、`let-exp`、`proc-exp` 時，`value-of` 會報錯（`report-invalid-translated-expression`）。
+
+---
+
+# `apply-procedure` 少了什麼？（p.76、p.98）
+
+| | 等式 |
+|---|---|
+| PROC（p.76） | `(apply-procedure (procedure var body ρ) val)`<br>`= (value-of body [var=val]ρ)` |
+| lexaddr-lang（p.98） | `(apply-procedure (procedure body ρ) val)`<br>`= (value-of body (extend-nameless-env val ρ))` |
+
+p.98：新規格就是舊的拿掉變數名字（lexaddr-lang 這條的 ρ 是 nameless environment），所以 `proc` 少一欄：
+
+```racket
+(define-datatype proc proc?
+  (procedure
+    (body expression?)
+    (saved-nameless-env nameless-environment?)))
+```
+
+p.98：用到環境的只有 procedure 和 `value-of` 兩處。
 
 ---
 
@@ -944,7 +994,7 @@ if zero?(0) then 1 else foo
 | 形狀不符 grammar | `-(1,` | `scan&parse` | 翻譯前 | `parsing: at line 1: nonterminal <expression> can't begin with end-marker #f` |
 | 找不到 declaration | `if zero?(0) then 1 else foo` | `apply-senv` | 翻譯時 | `translation-of: unbound variable in code: foo` |
 | 值的種類不對 | `-(zero?(0),1)` | `expval->num` | 執行時 | `expval-extractors: Looking for a num, found #(struct:bool-val #t)` |
-| 對到錯的 declaration | 第 54 張 | 沒有 | — | 照常算出一個值 |
+| 對到錯的 declaration | 第 56 張 | 沒有 | — | 照常算出一個值 |
 
 第三列 class 5 看過：grammar 管不到值的種類，要等 `expval->num` 被呼叫才知道。
 
@@ -957,7 +1007,7 @@ if zero?(0) then 1 else foo
 | | 前提 | 不成立時 |
 |---|---|---|
 | 1 | 每個 reference 對應哪個 declaration，只看程式文字就能決定 | dynamic binding：對應關係要看呼叫者（第 18 張，Ex 3.28, p.82） |
-| 2 | translator 知道每個可能的 declaration，包括初始環境裡的名字 | `init-senv` 與 `init-nameless-env` 對不齊時，答案錯（第 41 張） |
+| 2 | translator 知道每個可能的 declaration，包括初始環境裡的名字 | `init-senv` 與 `init-nameless-env` 對不齊時，答案錯（第 43 張） |
 
 前提 1 是 §3.5 的 lexical scoping；前提 2 在課本裡由 `init-senv`（p.96）負責。
 
@@ -990,7 +1040,7 @@ linting took 6ms, errors: 1, warnings: 0
 
 我的問題是：coding agent 自己跑 unit test 很快，那這種靜態檢查是不是不做也還好？
 
-我的答案：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹。以第 48 張的 `if zero?(0) then 1 else foo` 為例：
+我的答案：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹。以第 50 張的 `if zero?(0) then 1 else foo` 為例：
 
 | 檢查方式 | 有沒有發現 `foo` | 原因 |
 |---|---|---|
@@ -1020,7 +1070,7 @@ translator 都沒有報錯。`proc` body 的翻譯結果，一個是 `(diff-exp 
 
 **問題一**：有關。`run` 分成翻譯與執行兩段（p.98）；翻譯算的是 static property（p.88）；抓到「找不到 declaration」是 `apply-senv` 順帶做到的（p.95）。課本給翻譯的理由是執行時不必搜尋（p.96）。
 
-**問題二**：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹（第 53 張）。這個 translator 管不到「對到錯的 declaration」（第 54 張），那要靠人讀。
+**問題二**：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹（第 55 張）。這個 translator 管不到「對到錯的 declaration」（第 56 張），那要靠人讀。
 
 ---
 
@@ -1046,9 +1096,9 @@ week 9 是期中考。3.40 同時用到 class 7 與今天的內容，可以先�
 
 **3.37**：建在 3.28 的參考解上（HW3 截止後公布），只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18 張：dynamic binding 下，reference 對到哪個 declaration 要看呼叫者。
 
-**3.38**：lexaddr-lang 沒有 `cond`，grammar、translator、interpreter 都要改。練的是第 31 張：不引入新變數的結構，子節點用同一個 senv 翻譯。
+**3.38**：lexaddr-lang 沒有 `cond`，grammar、translator、interpreter 都要改。練的是第 32 張：不引入新變數的結構，子節點用同一個 senv 翻譯。
 
-**3.40**：lexaddr-lang 的 grammar 沒有 `letrec`，production 要自己加。另附一個測試：遞迴程序的 closure 若建在錯的環境，這個測試會失敗（對照 class 7 把 `env` 改成 `saved-env`）。練的是引入新變數時 senv 怎麼擴充，以及第 40–41 張的兩邊對齊。
+**3.40**：lexaddr-lang 的 grammar 沒有 `letrec`，production 要自己加。另附一個測試：遞迴程序的 closure 若建在錯的環境，這個測試會失敗（對照 class 7 把 `env` 改成 `saved-env`）。練的是引入新變數時 senv 怎麼擴充，以及第 42–43 張的兩邊對齊。
 
 3.37 換成 `double` 的寫法：
 
