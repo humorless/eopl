@@ -58,10 +58,10 @@ style: |
 | 第 3 堂 | 這個 translator 和編譯器、靜態檢查的關係；有了 unit test，還需要靜態檢查嗎？HW4 |
 
 <!-- 講者備註：
-第 1 堂：概念 9 個、停下來想 3 處（第 4、13、18 張）、約 48 分鐘
-第 2 堂：概念 6 個、停下來想 2 處（第 31、39 張）、約 50 分鐘
-第 3 堂：概念 5 個、停下來想 2 處（第 44、47 張）、約 40 分鐘
-超時時：把第 44–45 張移到第 2 堂末尾。 -->
+第 1 堂：概念 9 個、停下來想 2 處（第 4、13 張）、約 47 分鐘
+第 2 堂：概念 6 個、停下來想 2 處（第 32、40 張）、約 50 分鐘
+第 3 堂：概念 5 個、停下來想 2 處（第 45、48 張）、約 40 分鐘
+超時時：把第 45–46 張移到第 2 堂末尾。 -->
 
 ---
 
@@ -302,61 +302,61 @@ p.90：binding 什麼時候不再被用到、可以被 garbage collector 回收�
 
 ---
 
-# 「dynamic」的兩個意思（pp.90–91）
+# Scope 與 Extent
 
-p.91：dynamic 有時指 “during the evaluation of an expression”，有時指 “not calculable in advance”。
+| | 問的是 | 課本 |
+|---|---|---|
+| scope | 哪一段程式裡的 reference 會對到這個 declaration | p.88 |
+| extent | binding 在執行時存在多久 | p.90 |
 
-| 詞 | dynamic 在這裡的意思（p.91） | 這個詞說的是 | 屬於哪一種 property |
-|---|---|---|---|
-| dynamic property（p.90） | not calculable in advance：事先算不出來 | semi-infinite extent 下，binding 何時能回收 | dynamic |
-| dynamic extent（p.91） | during the evaluation of an expression：在某個式子求值的期間 | 假設程序不能當 `let` 的值，binding 只在 `let` body 求值期間有效 | static：可以事先預測何時丟棄 |
+lexical scoping 下，scope 只看程式文字就能決定（p.88）。extent 要看執行：semi-infinite extent 下，binding 何時能回收要到執行時才知道（p.90）。
 
-p.91：dynamic binding（Exercise 3.28 起）的行為和 dynamic extent 類似。
-
----
-
-# dynamic binding（Ex 3.28, p.82）
-
-Exercise 3.28 [★★]（p.82）：dynamic binding 下，procedure body 在「把呼叫處的環境擴充之後」的環境裡求值。p.82 的例子：
-
-```
-let a = 3
-in let p = proc (x) -(x,a)
-       a = 5
-   in -(a,(p 2))
-```
-
-p.82：procedure body 裡的 `a` 會綁到 5，不是 3。
-
-原版用了 Ex 3.16 的多變數 `let`（用 HW3 的 3.16＋3.28 可跑）。改寫成單變數 `let` 就能在 letrec-lang 跑（課本沒有，是我改寫的）：
-
-```
-let a = 3 in let p = proc (x) -(x,a) in let a = 5 in -(a,(p 2))
-```
-
-**停下來想**：lexical binding 與 dynamic binding 下，整個程式各得多少？
-
-<!-- 答案在下一張：lexical 得 6，dynamic 得 8。改寫版已實跑：letrec-lang 得 (num-val 6)；dynamic binding 版本得 (num-val 8)。
-已實跑：letrec-lang 加上 3.16（lexical）得 (num-val 6)；再加上 3.28（dynamic）得 (num-val 8)。這兩份實作是我自己寫來驗證的，不公開；只展示輸出。 -->
+p.91 提醒「dynamic」有兩種用法。看到 dynamic 時，先問它講的是 scope 還是 extent（我的解讀）。
 
 ---
 
-# 對答案：`a` 對到哪一個 declaration？
+# 課外補充：dynamic scoping，以 bash 為例
 
-| binding | `p` 的 body 裡的 `a` 對到 | `(p 2)` | 整個程式 |
-|---|---|---|---|
-| lexical | `let a = 3` | `-(2,3)` = −1 | `(num-val 6)` |
-| dynamic | 呼叫處的 `a = 5` | `-(2,5)` = −3 | `(num-val 8)` |
+```bash
+$ bash -c 'a=3; p(){ echo $a; }; f(){ local a=5; p; }; f; p'
+5
+3
+```
+
+| 輸出 | 說明 |
+|---|---|
+| `5` | scope：`p` 的 `a` 對到呼叫處 `f` 裡的 `local a=5`（dynamic scoping） |
+| `3` | extent：`f` 結束後，`local a` 的 binding 就不見了（dynamic extent） |
+
+EOPL 把這種規則叫 dynamic binding（Ex 3.28, p.82）。
+
+為什麼現代語言很少把它當預設（我的解讀）：dynamic scoping 破壞了程式設計中非常重要的一個原則：「局部推論能力」（local reasoning，課外補充）。只讀 `p` 的定義，看不出 `a` 對到誰，要知道所有可能的呼叫路徑才知道，很難追蹤。
+
+以 dynamic scoping 為預設的，常見的只剩 shell（如 bash）。
+
+<!-- bash 實測：GNU bash（Ubuntu 24.04）。 -->
+
+---
+
+# scope 與 extent 是兩個獨立的軸
+
+（這張是我的整理，課本沒有這張表。）
+
+| | semi-infinite extent | dynamic extent |
+|---|---|---|
+| lexical scoping | letrec-lang 的 `let a = 5`（第 16 張） | p.91 的假設：程序不能當 `let` 的值 |
+| dynamic scoping | （少見，不談） | bash 的 `local a=5`（第 18 張） |
+
+scope 看的是：哪些 reference 對得到這個 declaration（第 18 張 `p` 裡的 `$a`）；extent 看的是：它的 binding 何時消失（`f` 結束時）。
 
 ---
 
 # 第 1 堂回顧
 
 1. reference 是使用變數，declaration 是引入名字；reference **bound by** declaration、**bound to** 值（p.87）
-2. reference 對應哪個 declaration 是 static property，方法是從 reference 往外找（p.88）
-3. 內層同名的 declaration 會 shadow 外層；contour diagram 把每個 scope 畫成一個框（p.89）
-4. binding 留多久叫 extent；這個語言是 semi-infinite，何時能回收是 dynamic property（p.90）
-5. dynamic binding 下，procedure body 的變數對到呼叫處的 declaration（Ex 3.28, p.82）
+2. lexical scoping 下，reference 對應哪個 declaration 是 static property，方法是從 reference 往外找（p.88）；內層同名的 declaration 會 shadow 外層（p.89）
+3. scope 問的是哪一段程式的 reference 對到這個 declaration；extent 問的是 binding 在執行時存在多久（pp.88–90）
+4. 兩個軸各自獨立：letrec-lang 的 `let a = 5` 是 lexical scoping＋semi-infinite extent；bash 的 `local a=5` 是 dynamic scoping＋dynamic extent（我的整理）
 
 ---
 
@@ -397,7 +397,29 @@ p.91：第三行的 `x` 是 1；`a` 和最後一行的 `x` 都是 0。
 
 p.91：這些數字叫 **lexical address** 或 **de Bruijn index**，每個數字都指出它對應的是哪一個 declaration。
 
-p.91：編譯器例行地計算每個 reference 的 lexical address；算完之後，除了除錯資訊，變數名字就可以丟掉。
+p.91：編譯器例行地計算每個 reference 的 lexical address；算完之後，除非是要提供除錯資訊，不然，變數名字可以丟掉。
+
+---
+
+# §3.7 要寫的兩個程式（p.93）
+
+p.93：寫一個 `translation-of-program`，把 declaration 裡的變數拿掉，把每個 reference 換成它的 lexical depth。
+
+p.93：再寫一個新版的 `value-of-program`，求這種 nameless 程式的值，環境裡不放變數。
+
+p.98 的 `run` 把兩者接起來：
+
+```racket
+(define run
+  (lambda (string)
+    (value-of-program
+      (translation-of-program
+        (scan&parse string)))))
+```
+
+以下把這套程式叫 lexaddr-lang（repo 的目錄名；課本沒有替它取名）。
+
+<!-- repo 的 top.scm 把第三層的函式叫 value-of-translation，body 與課本 p.98 的 value-of-program 相同。 -->
 
 ---
 
@@ -416,9 +438,16 @@ racket -i -t top.scm
 > (require "translator.scm" "lang.scm")
 ```
 
-之後就能呼叫 `translation-of-program` 和 `scan&parse`。
+之後就能呼叫 `translation-of-program` 和 `scan&parse`。同一個程式，三個階段：
 
-本堂的錯誤訊息照終端機 `racket -i` 印出的格式寫（開頭是 `; `，結尾是 `[,bt for context]`）；DrRacket 的顯示方式不同。
+```racket
+> (scan&parse "let x = 3 in x")
+(a-program (let-exp 'x (const-exp 3) (var-exp 'x)))
+> (translation-of-program (scan&parse "let x = 3 in x"))
+(a-program (nameless-let-exp (const-exp 3) (nameless-var-exp 0)))
+> (run "let x = 3 in x")
+(num-val 3)
+```
 
 ---
 
@@ -473,17 +502,27 @@ p.93 在第二、三行之間換了寫法：`(extend-env a ⌈5⌉ ρ)` 就是 `
 
 <!-- _class: small -->
 
-# LEXADDR 的規格，四個角度各改了什麼？
+# lexaddr-lang 的規格
 
-延續 class 6、7 的表。lexaddr-lang 建在 PROC 上（repo 的 `lang.scm` 沒有 `letrec`），所以和 PROC 比。
+四個角度描述的是一個語言。translator 是兩個語言之間的映射，另外列。
 
-| 角度 | PROC（§3.3） | LEXADDR（§3.7） |
+target language（nameless 程式）和 PROC 比：
+
+| 角度 | PROC（§3.3） | target language（§3.7） |
 |---|---|---|
-| syntax | 加 `proc-exp`、`call-exp`（p.75） | source 不變；多三個 nameless production，只給 translator 的輸出用（p.94） |
+| syntax | 加 `proc-exp`、`call-exp`（p.75） | 三個 nameless production；沒有 `var-exp`、`let-exp`、`proc-exp`（p.94） |
 | values | Int + Bool + Proc（p.75） | ExpVal 不變；Proc 少了變數名字那一欄（p.98） |
-| environments | `extend-env` 存名字和值（p.61） | 拆成兩種：翻譯時的 static environment 只存名字（p.95）；執行時的 nameless environment 只存值（pp.98–99） |
-| behavior | 三條等式（p.76） | `apply-procedure` 拿掉變數名字（p.98）；`value-of` 多三個 nameless 分支（p.100） |
-| 新的一段 | — | `run` 先翻譯、再執行（p.98） |
+| environments | `extend-env` 存名字和值（p.61） | nameless environment 只存值（pp.98–99） |
+| behavior | 三條等式（p.76） | `apply-procedure` 拿掉變數名字（p.98）；`value-of` 的三個 nameless 分支（p.100） |
+
+translator：
+
+| 項目 | 內容 |
+|---|---|
+| 輸入 | source language 的程式（p.94）；repo 的 `lang.scm` 是 PROC 的語法，沒有 `letrec` |
+| 輸出 | target language 的程式（p.94） |
+| context | static environment，只存名字（p.95） |
+| 要求 | 翻譯後的程式，和原程式算出同一個值（我的解讀） |
 
 ---
 
@@ -508,6 +547,8 @@ p.94：名字用 `%` 開頭，因為 `%` 在這個語言裡通常是註解字元
 整行被當成註解。我的解讀：使用者打不出這三種結構，它們只能由 translator 產生。
 
 <!-- repo 的 lang.scm 把第一條寫成 %nameless-var，課本 p.94 寫 %lexref；上面的實測用 repo 的寫法。 -->
+
+<!-- 本堂的錯誤訊息照終端機 racket -i 印出的格式寫（開頭是 ; ，結尾是 [,bt for context]）；DrRacket 的顯示方式不同。 -->
 
 ---
 
@@ -627,9 +668,9 @@ p.98 寫 DenVal，Figure 3.17 寫 ExpVal；本章兩者相同（p.61）。
 | | 等式 |
 |---|---|
 | PROC（p.76） | `(apply-procedure (procedure var body ρ) val)`<br>`= (value-of body [var=val]ρ)` |
-| LEXADDR（p.98） | `(apply-procedure (procedure body ρ) val)`<br>`= (value-of body (extend-nameless-env val ρ))` |
+| lexaddr-lang（p.98） | `(apply-procedure (procedure body ρ) val)`<br>`= (value-of body (extend-nameless-env val ρ))` |
 
-p.98：新規格就是舊的拿掉變數名字（LEXADDR 這條的 ρ 是 nameless environment），所以 `proc` 少一欄：
+p.98：新規格就是舊的拿掉變數名字（lexaddr-lang 這條的 ρ 是 nameless environment），所以 `proc` 少一欄：
 
 ```racket
 (define-datatype proc proc?
@@ -723,7 +764,7 @@ p.93 的程式，兩個語言各跑一次：
 
 下排拿掉了上排的名字，順序不變。
 
-closure 被呼叫時，`apply-procedure` 把參數 `y` 的值接在最前面（p.98），`x` 的位置就從 0 變成 1。這和第 32 張 `-(y,x)` 裡 `x`→1 對得上。
+closure 被呼叫時，`apply-procedure` 把參數 `y` 的值接在最前面（p.98），`x` 的位置就從 0 變成 1。這和第 33 張 `-(y,x)` 裡 `x`→1 對得上。
 
 <!-- 圖的原始碼：img/env-named.mmd、img/env-nameless.mmd（Mermaid），設定檔 img/config.json。兩張圖的節點數相同，位置對齊。 -->
 
@@ -837,7 +878,7 @@ p.101 的 Ex 3.43 [★★★] 舉了一個更進一步的例子：translator 可
 
 # 問題一：這和編譯器的 phase 有關嗎？
 
-p.98 的 `run` 依序呼叫三個函式：
+第 24 張的 `run`（p.98）依序呼叫三個函式：
 
 | 階段 | 函式 | 輸入 | 輸出 |
 |---|---|---|---|
@@ -903,7 +944,7 @@ if zero?(0) then 1 else foo
 | 形狀不符 grammar | `-(1,` | `scan&parse` | 翻譯前 | `parsing: at line 1: nonterminal <expression> can't begin with end-marker #f` |
 | 找不到 declaration | `if zero?(0) then 1 else foo` | `apply-senv` | 翻譯時 | `translation-of: unbound variable in code: foo` |
 | 值的種類不對 | `-(zero?(0),1)` | `expval->num` | 執行時 | `expval-extractors: Looking for a num, found #(struct:bool-val #t)` |
-| 對到錯的 declaration | 第 53 張 | 沒有 | — | 照常算出一個值 |
+| 對到錯的 declaration | 第 54 張 | 沒有 | — | 照常算出一個值 |
 
 第三列 class 5 看過：grammar 管不到值的種類，要等 `expval->num` 被呼叫才知道。
 
@@ -915,8 +956,8 @@ if zero?(0) then 1 else foo
 
 | | 前提 | 不成立時 |
 |---|---|---|
-| 1 | 每個 reference 對應哪個 declaration，只看程式文字就能決定 | dynamic binding：對應關係要看呼叫者（第 19 張，Ex 3.28, p.82） |
-| 2 | translator 知道每個可能的 declaration，包括初始環境裡的名字 | `init-senv` 與 `init-nameless-env` 對不齊時，答案錯（第 40 張） |
+| 1 | 每個 reference 對應哪個 declaration，只看程式文字就能決定 | dynamic binding：對應關係要看呼叫者（第 18 張，Ex 3.28, p.82） |
+| 2 | translator 知道每個可能的 declaration，包括初始環境裡的名字 | `init-senv` 與 `init-nameless-env` 對不齊時，答案錯（第 41 張） |
 
 前提 1 是 §3.5 的 lexical scoping；前提 2 在課本裡由 `init-senv`（p.96）負責。
 
@@ -949,7 +990,7 @@ linting took 6ms, errors: 1, warnings: 0
 
 我的問題是：coding agent 自己跑 unit test 很快，那這種靜態檢查是不是不做也還好？
 
-我的答案：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹。以第 47 張的 `if zero?(0) then 1 else foo` 為例：
+我的答案：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹。以第 48 張的 `if zero?(0) then 1 else foo` 為例：
 
 | 檢查方式 | 有沒有發現 `foo` | 原因 |
 |---|---|---|
@@ -979,7 +1020,7 @@ translator 都沒有報錯。`proc` body 的翻譯結果，一個是 `(diff-exp 
 
 **問題一**：有關。`run` 分成翻譯與執行兩段（p.98）；翻譯算的是 static property（p.88）；抓到「找不到 declaration」是 `apply-senv` 順帶做到的（p.95）。課本給翻譯的理由是執行時不必搜尋（p.96）。
 
-**問題二**：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹（第 52 張）。這個 translator 管不到「對到錯的 declaration」（第 53 張），那要靠人讀。
+**問題二**：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹（第 53 張）。這個 translator 管不到「對到錯的 declaration」（第 54 張），那要靠人讀。
 
 ---
 
@@ -1003,11 +1044,11 @@ week 9 是期中考。3.40 同時用到 class 7 與今天的內容，可以先�
 
 # 每題的補充說明
 
-**3.37**：建在 3.28 的參考解上（HW3 截止後公布），只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18–19 張：dynamic binding 下，reference 對到哪個 declaration 要看呼叫者。
+**3.37**：建在 3.28 的參考解上（HW3 截止後公布），只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18 張：dynamic binding 下，reference 對到哪個 declaration 要看呼叫者。
 
-**3.38**：lexaddr-lang 沒有 `cond`，grammar、translator、interpreter 都要改。練的是第 30 張：不引入新變數的結構，子節點用同一個 senv 翻譯。
+**3.38**：lexaddr-lang 沒有 `cond`，grammar、translator、interpreter 都要改。練的是第 31 張：不引入新變數的結構，子節點用同一個 senv 翻譯。
 
-**3.40**：lexaddr-lang 的 grammar 沒有 `letrec`，production 要自己加。另附一個測試：遞迴程序的 closure 若建在錯的環境，這個測試會失敗（對照 class 7 把 `env` 改成 `saved-env`）。練的是引入新變數時 senv 怎麼擴充，以及第 39–40 張的兩邊對齊。
+**3.40**：lexaddr-lang 的 grammar 沒有 `letrec`，production 要自己加。另附一個測試：遞迴程序的 closure 若建在錯的環境，這個測試會失敗（對照 class 7 把 `env` 改成 `saved-env`）。練的是引入新變數時 senv 怎麼擴充，以及第 40–41 張的兩邊對齊。
 
 3.37 換成 `double` 的寫法：
 
