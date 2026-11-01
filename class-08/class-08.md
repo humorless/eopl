@@ -59,9 +59,8 @@ style: |
 
 <!-- 講者備註：
 第 1 堂：概念 9 個、停下來想 2 處（第 4、13 張）、約 47 分鐘
-第 2 堂：概念 6 個、停下來想 1 處（第 42 張）、約 50 分鐘
-第 3 堂：概念 5 個、停下來想 2 處（第 47、50 張）、約 40 分鐘
-超時時：把第 47–48 張移到第 2 堂末尾。 -->
+第 2 堂：概念 6 個、停下來想 1 處（第 42 張）、約 52–55 分鐘
+第 3 堂：概念 4 個、停下來想 2 處（第 47、50 張）、約 32–35 分鐘 -->
 
 ---
 
@@ -884,7 +883,7 @@ translator 和 interpreter 各自照自己的規則都沒有出錯；出錯的�
 | 時間 | 內容 |
 |---|---|
 | 0–8 分 | 為什麼要先翻譯？ |
-| 8–28 分 | 問題一：這和編譯器的 phase、靜態分析、linter 有什麼關係？ |
+| 8–28 分 | 問題一：這和編譯器的 phase、靜態分析有什麼關係？ |
 | 28–36 分 | 問題二：有了 unit test，還需要靜態檢查嗎？ |
 | 36–50 分 | HW4 與提問 |
 
@@ -994,45 +993,9 @@ if zero?(0) then 1 else foo
 | 形狀不符 grammar | `-(1,` | `scan&parse` | 翻譯前 | `parsing: at line 1: nonterminal <expression> can't begin with end-marker #f` |
 | 找不到 declaration | `if zero?(0) then 1 else foo` | `apply-senv` | 翻譯時 | `translation-of: unbound variable in code: foo` |
 | 值的種類不對 | `-(zero?(0),1)` | `expval->num` | 執行時 | `expval-extractors: Looking for a num, found #(struct:bool-val #t)` |
-| 對到錯的 declaration | 第 56 張 | 沒有 | — | 照常算出一個值 |
+| 對到錯的 declaration | 第 54 張 | 沒有 | — | 照常算出一個值 |
 
 第三列 class 5 看過：grammar 管不到值的種類，要等 `expval->num` 被呼叫才知道。
-
----
-
-# 在執行前算出位置，需要什麼前提？
-
-（這張是我的歸納。）translator 要在執行前算出每個 reference 的位置，至少需要兩件事：
-
-| | 前提 | 不成立時 |
-|---|---|---|
-| 1 | 每個 reference 對應哪個 declaration，只看程式文字就能決定 | dynamic scoping：對應關係要看呼叫者（第 18 張，Ex 3.28, p.82） |
-| 2 | translator 知道每個可能的 declaration，包括初始環境裡的名字 | `init-senv` 與 `init-nameless-env` 對不齊時，答案錯（第 43 張） |
-
-前提 1 是 §3.5 的 lexical scoping；前提 2 在課本裡由 `init-senv`（p.96）負責。
-
-反對論點（課外補充）：真實語言常有 `eval`、動態載入、在執行時新增全域名字之類的機制，前提 2 不一定成立。這種語言要不就把檢查延到執行時，要不就只檢查一部分。
-
----
-
-# 同一個「往外找」，三種用途
-
-（這張是我的解讀。）三個工具都從 reference 往外找 declaration（p.88 的方法），差別在找到之後要拿什麼：
-
-| 工具 | 找到時要的是 | 找不到時 | 出處 |
-|---|---|---|---|
-| `apply-senv` | 穿過幾層（位置） | `report-unbound-var` | Figure 3.15, p.95 |
-| class 5 的 jump-to-def | declaration 在檔案裡的位置 | — | conjure PR #704 |
-| clj-kondo（課外補充） | 不回報 | 回報錯誤 | 實測 v2025.02.20 |
-
-clj-kondo 是 Clojure 的 linter（課外補充：不執行程式、只讀原始碼找問題的工具）。對 `(defn f [] (if true 1 foo))`：
-
-```
-u.clj:1:23: error: Unresolved symbol: foo
-linting took 6ms, errors: 1, warnings: 0
-```
-
-<!-- 毫秒數每次執行會不同。 -->
 
 ---
 
@@ -1070,7 +1033,7 @@ translator 都沒有報錯。`proc` body 的翻譯結果，一個是 `(diff-exp 
 
 **問題一**：有關。`run` 分成翻譯與執行兩段（p.98）；翻譯算的是 static property（p.88）；抓到「找不到 declaration」是 `apply-senv` 順帶做到的（p.95）。課本給翻譯的理由是執行時不必搜尋（p.96）。
 
-**問題二**：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹（第 55 張）。這個 translator 管不到「對到錯的 declaration」（第 56 張），那要靠人讀。
+**問題二**：還需要。測試只檢查被執行到的分支；translator 走訪整棵樹（第 53 張）。這個 translator 管不到「對到錯的 declaration」（第 54 張），那要靠人讀。
 
 ---
 
@@ -1093,7 +1056,7 @@ week 9 是期中考。3.40 同時用到 class 7 與今天的內容，可以先�
 
 # 每題的補充說明
 
-**3.37**：建立在 3.28 的參考解上，只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18 張：dynamic scoping 下，reference 對到哪個 declaration 要看呼叫者。
+**3.37**：建在 3.28 的參考解上，只用其中一種表示法。PROC 沒有 `add1` 和 `*`：`add1(n)` 改寫成 `-(n,-1)`；`*` 二選一，自己加一個 `*` 運算，或把 `fact` 換成 class 7 的 `double`（見下）。兩種 binding 的結果都要附上。練的是第 18 張：dynamic scoping 下，reference 對到哪個 declaration 要看呼叫者。
 
 **3.40**：lexaddr-lang 的 grammar 沒有 `letrec`，production 要自己加。另附一個測試：遞迴程序的 closure 若建在錯的環境，這個測試會失敗（對照 class 7 把 `env` 改成 `saved-env`）。練的是引入新變數時 senv 怎麼擴充，以及第 42–43 張的兩邊對齊。
 
@@ -1112,8 +1075,8 @@ in let double = proc (x) if zero?(x) then 0 else -((double -(x,1)), -2)
 1. reference 對應哪個 declaration，在 lexical scoping 下是 static property，方法是從 reference 往外找（p.88）；dynamic scoping 下要看呼叫者（Ex 3.28, p.82）
 2. lexical address 是往外穿過的 contour 數（p.91）；translator 用只存名字的 senv 算出它，interpreter 用只存值的 nameless env 照位置取值（pp.94–100）
 3. 兩邊的順序要對齊，對不齊時沒有錯誤訊息，只有錯的答案（實測）
-4. 翻譯是執行前的一個 phase；它走訪整棵樹，所以連不會被執行的分支裡「找不到 declaration」的錯也抓得到，測試只檢查被執行到的分支（實測）
-5. 翻譯抓不到「對到錯的 declaration」，因為「變數對應到哪一個  declaration」，作者在程式裡已經寫錯了。（我的解讀）
+4. 翻譯是執行前的一個 phase。執行時不必再比對變數名字（p.96；這個實作走的層數不變，省的是每層的名字比較）；它也走訪整棵樹，連不會被執行的分支裡「找不到 declaration」的錯也抓得到，測試只檢查被執行到的分支（實測）
+5. 錯誤在哪個 phase 被找出來：形狀不符 → `scan&parse`（翻譯前）；找不到 declaration → translator（翻譯時）；值的種類不對 → `value-of`（執行時）
 
 ---
 
