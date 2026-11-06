@@ -55,12 +55,12 @@ style: |
 |---|---|
 | 第 1 堂 | Ch4 全章總表；§4.1 value、effect 與共享；handler + DB；store 模擬了什麼；EXPLICIT-REFS 的前兩個例子（pp.103–105） |
 | 第 2 堂 | Exercise 4.1、Clojure 的 atom、§4.2.1 store-passing、§4.2.2 三個新運算的規則（pp.105–109） |
-| 第 3 堂 | §4.2.3 的實作、求值順序、回頭看 effect（pp.109–114） |
+| 第 3 堂 | §4.2.3 的實作：實作策略、store 的介面、Figure 4.1–4.3、trace（pp.109–114） |
 
 <!-- 講者備註：
 第 1 堂：概念 10 個（含第 3 張的 Ch4 全章總表）、停下來想 1 處（第 19 張）、約 53 分鐘
 第 2 堂：概念 10 個、停下來想 2 處（第 24、27 張）、約 49 分鐘
-第 3 堂：概念 7 個、停下來想 0 處、約 47 分鐘（第 52 張動手改約 8–10 分鐘；時間不夠時改成講者示範） -->
+第 3 堂：概念 6 個、停下來想 0 處、約 40 分鐘 -->
 
 ---
 
@@ -80,8 +80,8 @@ style: |
 <!-- 講者備註：
 1. 嚴格說，讓共享「可觀察」的是 assignment（setref、set）；store 是把這件事記錄下來的模型。第 2 堂的 Ex 4.1（第 25–26 張）會讓學生看到：newref 的位置不同，兩次呼叫讀寫的是不是同一個 location 就不同。
 1a. 學生可能問：Ch3 的 environment 也在記憶體裡，那時為什麼不需要 store？回答（我的解讀）：environment 和 store 都在 Racket 的記憶體裡；差別在被定義的語言能不能觀察到共享。Ch3 的環境建好後不會被修改，拷貝和原本那份永遠相同，只看值的話分辨不出來。
-2. 第一列的「只看值」：第 54 張示範，在 Ch3 的語言裡，從先出現哪一個錯誤可以看出求值順序。
-3. EXPLICIT-REFS 列的「求值順序」指 diff-exp 兩個運算元誰先求值（第 3 堂第 51–54 張）。CALL-BY-NAME／NEED 列的「求值的次數與時機」是另一件事：operand 在呼叫前求值（eager，p.136 說 4.5.2 之前都是），還是用到時才求值。上課時不要把兩者說成同一件事。兩者的共同點在 p.138：call-by-name／need 讓求值順序難以判斷，而有 effect 時，求值順序會影響結果。
+2. 第一列的「只看值」：在 Ch3 的語言裡，兩個運算元都出錯時，先出現哪一個錯誤取決於求值順序（實測，proc-lang：-(-(zero?(0), 1), (3 4))）。
+3. EXPLICIT-REFS 列的「求值順序」指 diff-exp 兩個運算元誰先求值（第 2 堂第 34–35 張）。CALL-BY-NAME／NEED 列的「求值的次數與時機」是另一件事：operand 在呼叫前求值（eager，p.136 說 4.5.2 之前都是），還是用到時才求值。上課時不要把兩者說成同一件事。兩者的共同點在 p.138：call-by-name／need 讓求值順序難以判斷，而有 effect 時，求值順序會影響結果。
 4. 終止性：p.136 的 (f (infinite-loop 0))，lazy evaluation 下回傳 11，call-by-value 下不終止；不需要 effect 就分辨得出來。
 5. Exercise 4.39 [★]（p.138）：沒有 effect 時，call-by-name 與 call-by-need 的答案一定相同，和 Ex 4.1 同一個想法：沒有 effect，「共享」和「重算一次」就分辨不出來。
 6. p.132 談 call-by-reference：The only thing that changes is the allocation of new locations.；p.137 談 call-by-need 的配置策略與 call-by-reference 相同。
@@ -851,9 +851,9 @@ p.109 對這條規則的說明，逐項對到規則裡：
 ![](./img/store-impl-decision.png)
 
 ---
-# store 的實作細節 (成本/效能)
+# store 的介面與可替換的實作
 
-![w:700](./img/store-impl.png)
+![h:540](./img/store-impl.png)
 
 ---
 
@@ -890,8 +890,6 @@ p.109 對這條規則的說明，逐項對到規則裡：
     (list-ref the-store ref)))
 ```
 
-<!-- 這些程式和規則的對應，見第 46 張。 -->
-
 ---
 
 <!-- _class: small -->
@@ -927,10 +925,10 @@ p.109 對這條規則的說明，逐項對到規則裡：
 # store 之外還要改什麼？
 
 1. 在 `value-of-program` 呼叫 `(initialize-store!)`
-2. 在 `(define-datatype expval ...)` 增加一個 variant 給 `ref-val` 這個資料型別
+2. 在 `expval` 加一個 variant `ref-val`（p.110）
 3. 在 `value-of` 增加三個 clauses ，分別對應 3 個 explicit-reference operators
   - newref 
-  - defref
+  - deref
   - setref
 
 ---
@@ -947,52 +945,7 @@ p.109 對這條規則的說明，逐項對到規則裡：
 ```
 
 ---
-
-<!-- _class: small -->
-
-# Figure 4.4 的 trace（p.114）
-
-p.110：這份 trace 顯示，減法的 `exp1`、`exp2` 由左到右求值。
-
-```
-> (require "interp.scm" "store.scm")
-> (instrument-let #t)
-> (instrument-newref #t)
-> (run "let x = newref(22)
-        in let f = proc (z) let zz = newref(-(z,deref(x))) in deref(zz)
-           in -((f 66), (f 55))")
-newref: allocating location 0 with initial contents #(struct:num-val 22)
-entering body of proc z with env =
-((z #(struct:num-val 66))
- ...
-newref: allocating location 1 with initial contents #(struct:num-val 44)
-entering body of proc z with env =
-((z #(struct:num-val 55))
- ...
-newref: allocating location 2 with initial contents #(struct:num-val 33)
-(num-val 11)
-```
-
----
-# Trace 是怎麼實現的？參考 eopl3 的 repo
-
-```
-(define instrument-newref (make-parameter #f))
-
-(define newref
-    (lambda (val)
-      (let ((next-ref (length the-store)))
-        (set! the-store
-              (append the-store (list val)))
-        (when (instrument-newref)
-            (eopl:printf 
-             "newref: allocating location ~s with initial contents ~s~%"
-             next-ref val))                     
-        next-ref)))                     
-```
-
----
-# expval 這個 datatype 
+# expval 這個 datatype（repo 的 data-structures.scm）
 
 ```
 (define-datatype expval expval?
@@ -1039,6 +992,53 @@ newref: allocating location 2 with initial contents #(struct:num-val 33)
 
 <!-- _class: small -->
 
+# Figure 4.4 的 trace（p.114）
+
+p.110：這份 trace 顯示，減法的 `exp1`、`exp2` 由左到右求值。
+
+```
+> (require "interp.scm" "store.scm")
+> (instrument-let #t)
+> (instrument-newref #t)
+> (run "let x = newref(22)
+        in let f = proc (z) let zz = newref(-(z,deref(x))) in deref(zz)
+           in -((f 66), (f 55))")
+newref: allocating location 0 with initial contents #(struct:num-val 22)
+entering body of proc z with env =
+((z #(struct:num-val 66))
+ ...
+newref: allocating location 1 with initial contents #(struct:num-val 44)
+entering body of proc z with env =
+((z #(struct:num-val 55))
+ ...
+newref: allocating location 2 with initial contents #(struct:num-val 33)
+(num-val 11)
+```
+
+---
+# Trace 是怎麼實現的？（repo 的 store.scm）
+
+```
+(define instrument-newref (make-parameter #f))
+
+(define newref
+    (lambda (val)
+      (let ((next-ref (length the-store)))
+        (set! the-store
+              (append the-store (list val)))
+        (when (instrument-newref)
+            (eopl:printf 
+             "newref: allocating location ~s with initial contents ~s~%"
+             next-ref val))                     
+        next-ref)))                     
+```
+
+`make-parameter` 建立 Racket 的 parameter：`(instrument-newref)` 讀出目前的設定，`(instrument-newref #t)` 把它打開。
+
+---
+
+<!-- _class: small -->
+
 # 下週預告：§4.3 IMPLICIT-REFS（p.113）
 
 | | EXPLICIT-REFS（p.104） | IMPLICIT-REFS（p.113） |
@@ -1060,10 +1060,10 @@ p.113：每個綁定運算都會建立 location：每次 procedure call、`let`�
 # 本日結論
 
 1. **value、effect 與共享**：value 交給呼叫的地方；effect 改變外面的狀態，之後的計算讀得到；binding 由 scope 決定，assignment 由誰拿到 reference 決定（第 4–6 張）
-2. **store 模擬了什麼**：location 有 identity、內容會變；沒有釋放；reference 不能做算術（第 12 張）
-3. **Exercise 4.1**：`newref` 的位置，決定兩次呼叫讀寫的是不是同一個 location（第 25–26 張）
-4. **store-passing 規則**：`(value-of exp ρ σ0) = (val, σ1)`；diff-exp 的 exp2 從 σ1 開始，規定了先 exp1、後 exp2（第 32–35 張）
-5. **實作**：不傳 σ，改用一個 global variable `the-store`（p.110）；diff-exp 的先後在實作裡來自 Racket `let` 的求值順序，對調之後 `-((g 11), (g 11))` 從 −1 變成 1（第 52–53 張，實測）
+2. **EXPLICIT-REFS 語言**：提供了 effect 的功能。
+3. **store-passing 規則**：`(value-of exp ρ σ0) = (val, σ1)`；diff-exp 的 exp2 從 σ1 開始，規定了先 exp1、後 exp2（第 32–35 張）
+4. **實作策略**：不傳 σ，改用一個 global variable `the-store`（p.110）
+5. **tracing**：在實作時，就預先埋入可開始 tracing 的 switch  
 
 ---
 
