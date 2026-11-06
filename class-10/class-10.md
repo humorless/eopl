@@ -72,7 +72,7 @@ style: |
 |---|---|---|---|
 | PROC／LETREC | 無 | 無 | 無：共享與複製分辨不出來（只看值） |
 | EXPLICIT-REFS（今天） | ExpVal（p.104） | 只在 `newref`（p.104） | 顯式 cell 的 identity；運算元的求值順序 |
-| IMPLICIT-REFS | DenVal（p.113） | `let`、call、letrec 查找（p.119）、init env（repo 程式） | 每個變數的 identity；closure 捕捉的是 location |
+| IMPLICIT-REFS | DenVal（p.113） | init env、`let`、call、letrec 查找（p.118 列出四處；p.119） | 每個變數的 identity；closure 捕捉的是 location |
 | MUTABLE-PAIRS | DenVal，另外藏在 pair 裡（p.124） | 同上，另外每個 pair 配置兩格 | 藏在值裡的 identity，可跨變數共享 |
 | CALL-BY-REFERENCE | DenVal | 同 IMPLICIT-REFS，但 call 的實參是變數時不配置（p.132） | 參數與實參共享 identity（aliasing） |
 | CALL-BY-NAME／NEED | DenVal，location 可放 thunk（p.137） | 同 CALL-BY-REFERENCE；非變數的實參存成 thunk（p.137） | 終止性（p.136，不需 effect）；有 effect 時，求值的次數與時機；by-need 共享求值結果 |
@@ -85,7 +85,7 @@ style: |
 4. 終止性：p.136 的 (f (infinite-loop 0))，lazy evaluation 下回傳 11，call-by-value 下不終止；不需要 effect 就分辨得出來。
 5. Exercise 4.39 [★]（p.138）：沒有 effect 時，call-by-name 與 call-by-need 的答案一定相同，和 Ex 4.1 同一個想法：沒有 effect，「共享」和「重算一次」就分辨不出來。
 6. p.132 談 call-by-reference：The only thing that changes is the allocation of new locations.；p.137 談 call-by-need 的配置策略與 call-by-reference 相同。
-7. init env 的配置：課本 4.3 沒有明講；repo 的 implicit-refs/environments.scm 裡 init-env 用 newref 配置 i、v、x。
+7. init env 的配置：p.118 把 initial environment 列為新 binding 產生的四處之一，p.119 說要在這裡明確配置 location，但沒有附程式碼（let、call、letrec 三處都有）。程式碼在 repo 的 implicit-refs/environments.scm：init-env 用 newref 配置 i、v、x。p.120 Figure 4.8 的 trace 開頭的 location 0–2 就是這三個。
 8. thunk：還沒求值的 operand 加上它的環境（p.136）。名詞（Ref、location、newref）第 9–10 張才正式定義，這裡只當地圖看。 -->
 
 ---
