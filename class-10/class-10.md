@@ -848,13 +848,12 @@ p.109 對這條規則的說明，逐項對到規則裡：
 
 # 4.2.3 的實作策略是什麼？（pp.109–110）
 
-| 課文 | 意思 |
-|---|---|
-| p.109：Since we have only one real world, our program can only keep track of one state σ of the store. | 實際執行時只有一份 store。規則裡的 σ 每一個只往下傳一次，用過就不再用（例如 diff-exp 的 σ0 只給 exp1），所以只要保留最新的一份（後半句是我的解讀） |
-| p.109：Thus we model an effect as a Scheme effect. | 被定義語言的 effect，用 Racket 的 effect（`set!`）來實作 |
-| p.110：we do not explicitly pass and return it … Instead, we keep the state in a single global variable | 規則把 σ 當參數傳進傳出；實作不傳，改放在一個 global variable：`the-store` |
-| p.110：This is much like even/odd example | 和 even / odd 用共享的 location 代替傳參數，是同一種作法（第 13–15 張） |
-| p.110：we represent the store as a list of expressed values, and a reference is a number | store 是一個 list，reference 是 list 裡的位置（Figure 4.1–4.2） |
+![](./img/store-impl-decision.png)
+
+---
+# store 的實作細節 (成本/效能)
+
+![w:700](./img/store-impl.png)
 
 ---
 
@@ -925,73 +924,16 @@ p.109 對這條規則的說明，逐項對到規則裡：
 `setref-inner` 產生一個新的 list，`set!` 再拿它換掉 `the-store`。
 
 ---
+# store 之外還要改什麼？
 
-
-# Figure 4.1–4.2 和規則怎麼對應？
-
-| 規則（第 38–40 張） | 實作（Figure 4.1–4.2） |
-|---|---|
-| `l ∉ dom(σ1)`：配置新的 `l` | `next-ref` 取 `(length the-store)`：位置 0 到 n−1 都已用過，n 一定是新的 |
-| `[l=val]σ1`：擴充 store | `(append the-store (list val))`，再 `set!` 換掉 `the-store` |
-| `σ1(l)`：讀出內容 | `(list-ref the-store ref)` |
-| `[l=val]σ2`：更新內容 | `setref!`：做一個在位置 `ref` 放 `val` 的新 list，再 `set!` 換掉 `the-store` |
-| σ 一路往下傳 | 不傳：`the-store` 是一個 global variable（p.110） |
+1. 在 `value-of-program` 呼叫 `(initialize-store!)`
+2. 在 `(define-datatype expval ...)` 增加一個 variant 給 `ref-val` 這個資料型別
+3. 在 `value-of` 增加三個 clauses ，分別對應 3 個 explicit-reference operators
+  - newref 
+  - defref
+  - setref
 
 ---
-
-<!-- _class: small -->
-
-# 課外補充：`the-store` 與 atom
-
-| Figure 4.1–4.2（Racket） | Clojure（bb 實測） |
-|---|---|
-| `(define the-store '())` | `(def the-store (atom []))` |
-| `(set! the-store (append the-store (list val)))` | `(reset! the-store (conj @the-store val))` |
-| `(list-ref the-store ref)` | `(nth @the-store ref)` |
-| `setref!`：做一個新 list，再 `set!` | `(reset! the-store (assoc @the-store ref val))` |
-
-在 explicit-refs 的 REPL 裡看 store 的內容：
-
-```
-> (require "store.scm")
-> (run "let x = newref(1) in let y = newref(2) in setref(x, 10)")
-(num-val 23)
-> (get-store-as-list)
-(list (list 0 (num-val 10)) (list 1 (num-val 2)))
-```
-
-我的解讀：`the-store` 是一個變數，先後存放的 list 就是規格裡的 σ0、σ1、σ2…。class 1 介紹 The Value of Values 時的那句「identity = 一連串 value 的時序」，在這裡對得上：`the-store` 是 identity，每個 σ 是 value。
-
----
-
-<!-- _class: small -->
-
-# Figure 4.3（p.113）
-
-```scheme
-(newref-exp (exp1)
-  (let ((v1 (value-of exp1 env)))
-    (ref-val (newref v1))))
-
-(deref-exp (exp1)
-  (let ((v1 (value-of exp1 env)))
-    (let ((ref1 (expval->ref v1)))
-      (deref ref1))))
-
-(setref-exp (exp1 exp2)
-  (let ((ref (expval->ref (value-of exp1 env))))
-    (let ((val2 (value-of exp2 env)))
-      (begin
-        (setref! ref val2)
-        (num-val 23)))))
-```
-
-`setref-exp` 用兩層 `let`：先求值 `exp1`，再求值 `exp2`，和第 40 張規則的順序一致。`expval->ref` 就是第 39–40 張「`exp` 的值必須是 reference」的實作：不是的話會報錯。
-
----
-
-
-<!-- _class: small -->
 
 # value-of-program 每次執行前先清空 store（p.110）
 
@@ -1003,15 +945,6 @@ p.109 對這條規則的說明，逐項對到規則裡：
       (a-program (exp1)
         (value-of exp1 (init-env))))))
 ```
-
-p.110：we modify value-of-program to initialize the store before each evaluation.
-
-| 改法 | 結果（實測） |
-|---|---|
-| 拿掉 `(initialize-store!)` | `the-store` 一開始是 `'uninitialized`（Figure 4.1），`newref` 對它呼叫 `length`，報錯：`length: contract violation` |
-| 改成只在載入時初始化一次：`(define the-store '())` | 連跑兩次 `newref(0)`，得到 `(ref-val 0)`、`(ref-val 1)`：編號延續；連跑兩次 `let x = newref(7) in deref(x)`，兩次都是 `(num-val 7)` |
-
-REPL 印出的編號看得出前一次的 store 還在；程式算出的數字看不出來，因為程式不能拿 reference 做算術或比較（第 12 張）。
 
 ---
 
@@ -1040,128 +973,67 @@ newref: allocating location 2 with initial contents #(struct:num-val 33)
 (num-val 11)
 ```
 
-location 1 裝的是 44 = 66 − 22，所以 `(f 66)` 先被求值。repo 印的格式和 Figure 4.4 不完全相同（例如沒有 `entering let`），順序資訊一樣。
+---
+# Trace 是怎麼實現的？參考 eopl3 的 repo
+
+```
+(define instrument-newref (make-parameter #f))
+
+(define newref
+    (lambda (val)
+      (let ((next-ref (length the-store)))
+        (set! the-store
+              (append the-store (list val)))
+        (when (instrument-newref)
+            (eopl:printf 
+             "newref: allocating location ~s with initial contents ~s~%"
+             next-ref val))                     
+        next-ref)))                     
+```
 
 ---
-
-
-# `-((g 11), (g 11))` 的值是多少？
+# expval 這個 datatype 
 
 ```
-let g = let counter = newref(0)
-        in proc (dummy)
-            begin
-             setref(counter, -(deref(counter), -1));
-             deref(counter)
-            end
-in -((g 11), (g 11))
+(define-datatype expval expval?
+    (num-val
+      (value number?))
+    (bool-val
+      (boolean boolean?))
+    (proc-val 
+      (proc proc?))
+    (ref-val
+      (ref reference?))
+    )
 ```
 
-結果（實測）：`(num-val -1)`。依 diff-exp 的規則（第 34 張）：`exp1` 的 `(g 11)` 先求值，回傳 1；`exp2` 的 `(g 11)` 從 `exp1` 留下的 store 開始，回傳 2；1 − 2 = −1。
-
-和第 19 張的差別：第 19 張用兩層 `let` 決定先後；這裡的先後由 diff-exp 的規則決定。
+* 注意：`reference?` 在 store 的實作裡定義了。
 
 ---
 
 <!-- _class: small -->
 
-# 動手改：diff-exp 的求值順序
-
-`chapter4/explicit-refs/interp.scm` 裡的 diff-exp（和 Figure 3.8, p.71 相同）：
+# Figure 4.3（p.113）
 
 ```scheme
-(diff-exp (exp1 exp2)
-  (let ((val1 (value-of exp1 env))
-        (val2 (value-of exp2 env)))
-    ...
+(newref-exp (exp1)
+  (let ((v1 (value-of exp1 env)))
+    (ref-val (newref v1))))
+
+(deref-exp (exp1)
+  (let ((v1 (value-of exp1 env)))
+    (let ((ref1 (expval->ref v1)))
+      (deref ref1))))
+
+(setref-exp (exp1 exp2)
+  (let ((ref (expval->ref (value-of exp1 env))))
+    (let ((val2 (value-of exp2 env)))
+      (begin
+        (setref! ref val2)
+        (num-val 23)))))
 ```
 
-改成先求值 exp2：
-
-```scheme
-(diff-exp (exp1 exp2)
-  (let* ((val2 (value-of exp2 env))
-         (val1 (value-of exp1 env)))
-    ...
-```
-
-存檔、重開 REPL，分別跑三個程式：
-
-1. 第 51 張的 `-((g 11), (g 11))`
-2. 第 19 張的 `let a = (g 11) in let b = (g 11) in -(a,b)`
-3. `let f = proc (x) -(x,1) in -((f 10), (f 3))`
-
-<!-- 答案在第 53 張。改之前先把 interp.scm 備份。 -->
-
----
-
-<!-- _class: small -->
-
-# 對答案：求值順序由誰決定？
-
-| 程式 | 原本 | 改成先求值 exp2 |
-|---|---|---|
-| `-((g 11), (g 11))` | -1 | 1 |
-| `let a = (g 11) in let b = (g 11) in -(a,b)` | -1 | -1 |
-| `let f = proc (x) -(x,1) in -((f 10), (f 3))` | 7 | 7 |
-
-（實測）
-
-- 規格：diff-exp 的規則把 σ1 交給 exp2，規定了先 exp1（p.107）
-- 實作：原本的程式用一個 `let` 綁 `val1`、`val2`。Racket 的 `let` 由左到右求值（Racket Reference，Local Binding），這個實作因此先求值 exp1
-- 第 2 個程式不受影響：`let` 的巢狀結構已經決定了先後
-- p.112 的 Exercise 4.12 [★★★] 指出：這個 interpreter 對 store 的理解，依賴我們知道 Scheme 程式裡的 effect 何時發生
-
----
-
-<!-- _class: small -->
-
-# Ch3 的語言裡，求值順序完全看不出來嗎？
-
-第 53 張的第 3 列：`f` 不碰 store，對調順序後值不變。
-
-但兩個運算元都出錯時，先出現哪一個錯誤，取決於順序。在 `chapter3/proc-lang/ds-rep/` 裡跑（實測）：
-
-```
-> (run "-(-(zero?(0), 1), (3 4))")
-```
-
-| diff-exp 的實作 | 印出的錯誤（節錄第一行） |
-|---|---|
-| 原本（先 exp1） | `; expval-extractors: Looking for a num, found #(struct:bool-val #t)` |
-| 改成先 exp2 | `; expval-extractors: Looking for a proc, found #(struct:num-val 3)` |
-
-所以「Ch3 看不出求值順序」這句話要加範圍：只看正常結束的程式算出的值。（我的解讀）
-
----
-
-
-<!-- _class: small -->
-
-# 回頭看：4.2 還在哪裡提到 effect？
-
-| 原文 | 頁碼 | 意思 |
-|---|---|---|
-| In our language, any expression may have an effect. | p.107 | 任何 expression 都可能改 store，所以每條規則都要交代 store 怎麼變（第 32 張） |
-| … we say that this expression is executed for effect, rather than for its value. | p.109 | 執行 setref 是為了改 store，不在乎它回傳的 23（第 40 張） |
-| Thus we model an effect as a Scheme effect. | p.109 | 被定義語言的 effect，用 Racket 的 effect（`set!`）來實作（第 43 張） |
-| … it depends on us knowing when these effects take place in a Scheme program. | p.112（Ex 4.12） | 實作的結果，依賴 Racket 什麼時候執行 effect；第 53 張的 `let` 求值順序就是一例 |
-
----
-
-# handler + DB 比喻在哪裡失效？
-
-1. **一個 expression 內部的先後**：DB 的直覺只看 request 的先後；第 51–53 張的先後發生在一個 `-(…, …)` 裡面，由 diff-exp 的規則與實作決定。
-2. **private state**：counter 的 location 只有 `g` 的 closure 拿得到（p.105 的 private variable）。DB 裡，知道 table 和 id 的 handler 都能讀寫。lexical scope 提供的封裝，DB 比喻表達不出來。（我的解讀）
-3. **釋放**：DB 有 `DELETE`；EXPLICIT-REFS 沒有對應的運算（第 12 張）。
-
----
-
-# 作業與習題
-
-- 今天課堂已做完 Exercise 4.1 [★]（p.106）
-- 第 52 張改過的 `interp.scm`，請改回原本的版本，再做之後的作業
-- 第 2 堂的 Clojure 例子需要 babashka；安裝指令在第 11 張
+`setref-exp` 用兩層 `let`：先求值 `exp1`，再求值 `exp2`，和第 40 張規則的順序一致。`expval->ref` 就是第 39–40 張「`exp` 的值必須是 reference」的實作：不是的話會報錯。
 
 ---
 
