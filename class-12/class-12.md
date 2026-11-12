@@ -53,15 +53,15 @@ style: |
 
 - **第 1 堂**：§4.4 MUTABLE-PAIRS：pair 的 domain equation、兩種實作、Figure 4.11 的 trace；接到 §4.5 的 p.130（pp.124–130）
 - **第 2 堂**：§4.5.1 CALL-BY-REFERENCE：定義、f／g／z 與 swap、`apply-procedure` 與 `value-of-operand`、`let`、aliasing（pp.131–136）
-- **第 3 堂**：§4.5.2 call-by-name 與 call-by-need（pp.136–138）；Lua 補充；HW5
+- **第 3 堂**：§4.5.2 call-by-name 與 call-by-need（pp.136–138）；實務上的 call-by-name 補充；HW5
 
 <!-- 講者備註：
 第 1 堂：概念 9 個（domain equation 與五個運算、Figure 4.9、Figure 4.10、兩層 location、§4.4.2 表示法、表示法切換、pointer 與長度、四角度表、p.130 的一句話；其中 natural 與 call-by-value 的對照是 class-11 的回顧）、停下來想 2 處（第 8、13 張）、約 43 分鐘
 第 2 堂：概念 7 個（call-by-reference 的定義、共用 location、swap、apply-procedure／call-exp／value-of-operand 的分工、domain equation 不變、let 仍為 call-by-value、aliasing）、停下來想 1 處（第 21 張）、約 41 分鐘；第 30–32 張是 aliasing 範例的逐步解說，約 8 分鐘
-三堂約 43、41、44 分鐘，最大差 3 分鐘。p.130 的兩張銜接投影片（第 16–17 張）放在第 1 堂尾端；不移動的話，三堂約 38、47、44 分鐘，最大差 9 分鐘，也在 10 分鐘內；第 1 堂超時就可以把這兩張挪回第 2 堂開頭
-第 3 堂：概念 11 個（lazy evaluation 8、Lua 3），另有 thunk 由來 1 張課外補充（第 38 張）、約 44 分鐘；Lua 三張是陳述性內容，各約 3 分鐘；超時先刪第 43 張
+三堂約 43、41、45 分鐘，最大差 4 分鐘。p.130 的兩張銜接投影片（第 16–17 張）放在第 1 堂尾端；不移動的話，三堂約 38、47、45 分鐘，最大差 9 分鐘，也在 10 分鐘內；第 1 堂超時就可以把這兩張挪回第 2 堂開頭
+第 3 堂：概念 11 個（lazy evaluation 8、實務上的 call-by-name 3），另有 thunk 由來 1 張課外補充（第 38 張）、約 45 分鐘；第 45–47 張由你用 Clojure 與 Python 示範，各約 3 分鐘；超時先刪第 43 張
 每張的分鐘數是我的假設，沒有實測。
-程式都在 mwand/eopl3 的 chapter4 下用 racket -i -t top.scm 跑過（Racket v8.10）；Lua 用 Lua 5.4.6。 -->
+程式都在 mwand/eopl3 的 chapter4 下用 racket -i -t top.scm 跑過（Racket v8.10）；Clojure 用 babashka v1.13.229；Python 用 3.12.3。 -->
 
 ---
 
@@ -685,7 +685,7 @@ p.133（改寫）：這叫 variable aliasing，`x` 與 `y` 是同一個 location
 <!-- _class: lead -->
 
 # 第 3 堂
-## §4.5.2 call-by-name 與 call-by-need、Lua 補充、HW5
+## §4.5.2 call-by-name 與 call-by-need、實務補充、HW5
 
 ---
 
@@ -909,71 +909,101 @@ p.138（改寫）：
 ```
 
 ---
-
 <!-- _class: small -->
 
-# Lua 1：嵌入式語言是什麼？用在哪些場景？
+# 實務上的 call-by-name（1）：怎麼延遲一段 expression？
 
-課外補充。
+課外補充。想做的事：取得資源後、釋放資源前，執行一段 expression（開檔、使用、關檔）。
 
-- **embeddable language（嵌入式語言）**：實作成 library，被別的程式（host program）連結。host 可以執行一段 Lua 程式碼、讀寫 Lua 的變數、註冊 C 函式給 Lua 呼叫（Lua 5.4 手冊 §1，改寫）
-- Lua 以 clean C 寫成 library；distribution 另附一個叫 `lua` 的 host program（手冊 §1）
+**call-by-value**：operand 在呼叫前先求值（第 35 張）。
 
-| use case | 例子 | 來源 |
-|---|---|---|
-| 遊戲腳本 | World of Warcraft、Angry Birds | lua.org/about |
-| 應用程式的設定與擴充 | Adobe Photoshop Lightroom；Neovim 用 `init.lua` 當設定檔，內嵌 LuaJIT 2.1.0（相容 Lua 5.1） | lua.org/about；Neovim Lua guide |
-| 資料庫與伺服器內的腳本 | Redis 的 `EVAL` 在 server 內用內嵌的 Lua 5.1 interpreter 執行腳本 | Redis 文件 |
-| embedded systems | 巴西數位電視的 Ginga middleware | lua.org/about |
+```clojure
+(defn run-eager [result]
+  (println "acquire")
+  (println "release")
+  result)
 
-「embeddable language」與「embedded systems」是兩個不同的詞，lua.org/about 同時列了兩者。我的解讀：本課的 Racket 直譯器是 host，執行 LET、PROC 等被定義的語言，與 Lua 和它的 host 之間是同一種關係。
+(run-eager (do (println "using") 42))
+;; using / acquire / release     <- "using" runs before "acquire"
+```
 
-<!-- 講者備註：來源：Lua 5.4 Reference Manual §1；https://www.lua.org/about.html；https://redis.io/docs/latest/develop/programmability/eval-intro/；Neovim 的 Lua guide（nvim-lua-guide）。各處用的 Lua 版本不同：手冊 5.4、Redis 5.1、Neovim 是 LuaJIT。投影片上的輸出用 Lua 5.4.6 跑。 -->
+**包成 `(fn [] ...)`**（thunk，第 37 張），到需要時才呼叫：
+
+```clojure
+(defn run-with-resource [thunk]
+  (println "acquire")
+  (try (thunk) (finally (println "release"))))
+
+(run-with-resource (fn [] (println "using") 42))
+;; acquire / using / release     -> 42
+```
+
+這就是 call-by-name：operand 不先求值，body 需要時才求值（p.137）。
+
+<!-- 講者備註：Clojure 用 babashka v1.13.229 實測。`(fn [] ...)` 是沒有 parameter 的 closure，與第 37 張的 thunk 同形（我的解讀）。 -->
 
 ---
 
 <!-- _class: small -->
 
-# Lua 2：只有 table 一種資料結構，核心為什麼能小？
+# 實務上的 call-by-name（2）：有 macro 之後，`(fn [] ...)` 可以省略
 
-課外補充。
+macro 收到的是還沒求值的程式碼，可以自己決定放在哪裡（我的解讀：這是編譯期的 call-by-name）。
 
-- 手冊 §2.1 的基本型別：nil、boolean、number、string、function、userdata、thread、table
-- table 作為唯一的複合資料結構，可表示 array、record、set、tree 等；key 可以是 nil 與 NaN 以外的任何值（§2.1）
-- 模組、標準函式庫（`string`、`table`、`math` 本身都是 table，我實測 `type(string)` 得 `table`；手冊 §6），以及常見的物件導向寫法，都用 table 做出來；Lua 沒有內建的 class 語法
+```clojure
+(defmacro with-resource [& body]
+  `(run-with-resource (fn [] ~@body)))
 
-與 MutPair 對照：
+(with-resource (println "using") 42)    ; no (fn [] ...) at the call site
+;; acquire / using / release     -> 42
 
-| | MutPair（p.124） | Lua table |
+(macroexpand '(with-resource (println "using") 42))
+;; (user/run-with-resource (clojure.core/fn [] (println "using") 42))
+```
+
+Clojure 內建的 `with-*` 也是這個形狀：
+
+| macro | 在 body 前後做什麼 | 例子 |
 |---|---|---|
-| location 數量 | 恰好兩個，`newpair` 一次配置 | 任意個；對新 key 賦值才出現 |
-| `nil` | location 裡放著一個值 | 賦值 `nil` 等於刪除這個 key（手冊 §2.1） |
+| `with-open` | body 結束後關閉資源 | `(with-open [r (java.io.StringReader. "abc")] (slurp r))` → `"abc"` |
+| `binding` | body 內暫時改 dynamic var，結束後還原 | `(binding [*level* 1] *level*)` → 1，之後 `*level*` 回到 0 |
+| `with-out-str` | body 內的輸出收集成字串 | `(with-out-str (println "hi"))` → `"hi\n"` |
+
+<!-- 講者備註：`*level*` 先用 (def ^:dynamic *level* 0) 定義。也可以不經過函式，直接把 body 放進 try：(defmacro with-resource* [& body] `(do (println "acquire") (try ~@body (finally (println "release")))))，macroexpand 得 (do (clojure.core/println "acquire") (try (println "using") 42 (finally (clojure.core/println "release"))))。以上都在 babashka v1.13.229 實測。 -->
 
 ---
 
 <!-- _class: small -->
 
-# Lua 3：Lua 的 table 與 EOPL 的 mutable pair，像在哪裡？
+# 實務上的 call-by-name（3）：它在解決什麼問題？
 
-**像在哪裡**（課外補充）
+- **Resource／Context management**：body 一定要在 setup 之後、cleanup 之前執行，丟例外時 cleanup 也要執行。所以 body 不能在呼叫前先求值，要延遲，這就是 call-by-name 派上用場的地方
+- 常見場景：關檔、關連線、lock、transaction、暫時改變 context（`binding`）、收集輸出
 
-1. **可變的複合值只有一種**：MUTABLE-PAIRS 只有 pair（p.124），Lua 只有 table（手冊 §2.1）
-2. **複製的是 reference，共享的是內容**：變數複製後，改欄位，所有持有者都看得到
-3. **機制小，語意可以往上疊**：metatable 的 `__index`、`__newindex` 讓程式自訂 table 的讀寫（手冊 §2.4）；我的解讀：相當於自訂 `deref`、`setref!`
+Python 的 `with` 也是類似的用法：
 
-| | MUTABLE-PAIRS（repo） | Lua 5.4.6 |
-|---|---|---|
-| 同一個值，改欄位 | `let a = newpair(1,2) in let b = a in begin setleft a = 7; left(b) end` → 7 | `local a = {1}; local b = a; b[1] = 99; print(a[1])` → 99 |
+```python
+from contextlib import contextmanager
 
-**不同在哪裡**
+@contextmanager
+def resource():
+    print("acquire")
+    try:
+        yield
+    finally:
+        print("release")
 
-- 規模：pair 恰好兩格；table 有任意多個 key，對新 key 賦值才出現，賦值 `nil` 等於刪除 key
-- 實作：Lua 把 table 分成 array part 與 hash part（Lua 原始碼，手冊沒有規定）
-- 用途：pair 是 EOPL 為說明 store 與 reference 而加的特性（p.124）；table 是 Lua 做資料結構的基礎
+with resource():
+    print("using")
+# acquire / using / release
+```
 
-我的解讀：table 可以看成 MutPair 的推廣（key 到 location 的映射），兩者並不等價。
+我的解讀：Python 的 `with` 由語法提供，body 是縮排的區塊；Clojure 的 `with-*` 由 macro 提供。兩者解決同一個問題。
+
+<!-- 講者備註：Python 3.12.3 實測；例外情形下同樣先 release 再被 except 接到。Clojure 實測：(with-resource (throw (ex-info "boom" {}))) 先印 acquire，再印 release，最後才被 catch 接到。Python 的 `with open(...) as f` 也是同樣的 context manager 機制。 -->
 
 ---
+
 
 <!-- _class: small -->
 
@@ -1007,7 +1037,7 @@ p.138（改寫）：
 4. **lazy evaluation 的起點**：operand 到用才求值，可以避免不終止（p.136，第 35、36 張）
 5. **thunk**：沒求值的 operand 稱為 frozen，連同 environment 存成 thunk；operand 不是變數時才存成 thunk，變數仍傳它的 reference；call-by-name 每次重算，call-by-need 求值後寫回同一個 location（pp.136–138，第 37–42 張）
 6. **沒有 effect 時答案相同**：差別在 store；有 effect 時，求值順序影響結果（p.138，第 43、44 張）
-7. **補充**：Lua 是嵌入式語言（第 45 張）；table 可看成 MutPair 的推廣（第 46、47 張）
+7. **補充**：實務上的 call-by-name：把 expression 包成 `(fn [] ...)` 延遲執行，macro 可以省略 `fn`；常用在 resource／context management，例如 Clojure 的 `with-open`、Python 的 `with`（第 45–47 張）
 
 ---
 
