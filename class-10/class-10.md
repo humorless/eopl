@@ -1060,7 +1060,7 @@ p.113：每個綁定運算都會建立 location：每次 procedure call、`let`�
 # 本日結論
 
 1. **value、effect 與共享**：value 交給呼叫的地方；effect 改變外面的狀態，之後的計算讀得到；binding 由 scope 決定，assignment 由誰拿到 reference 決定（第 4–6 張）
-2. **EXPLICIT-REFS**：Ref 加進 ExpVal，新增 `newref`、`deref`、`setref`，environment 不變（第 10 張）；`newref` 放的位置，決定兩次呼叫讀寫的是不是同一個 location（Ex 4.1，第 25–26 張）
+2. **EXPLICIT-REFS**：Ref 加進 ExpVal，新增 `newref`、`deref`、`setref`，environment 不變（第 10 張）
 3. **store-passing 規則**：`(value-of exp ρ σ0) = (val, σ1)`；diff-exp 的 exp2 從 σ1 開始，規定了先 exp1、後 exp2（第 32–35 張）
 4. **實作策略**：不傳 σ，改用一個 global variable `the-store`（p.110）；diff-exp 的先後改由 Racket 的求值順序決定，這是對 Scheme effect 時機的依賴（p.112 Ex 4.12，第 43 張）
 5. **trace**：`newref` 內建印出配置訊息，用 `instrument-newref` 開關；trace 顯示減法由左到右求值（pp.110、114，第 51–52 張）
