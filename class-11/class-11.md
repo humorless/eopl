@@ -57,10 +57,10 @@ style: |
 | 第 3 堂 | 補充教材：mutable 與 immutable collection；課堂練習 Exercise 4.15、4.16（30 分鐘）；下週預告（pp.121、124） |
 
 <!-- 講者備註：
-第 1 堂：概念 10 個（含第 8 張的 class-05 回顧、第 13 張的規格形式、第 14 張的推論、第 15–16 張的兩條規則）、停下來想 1 處（第 6 張）、約 48 分鐘
-第 2 堂：概念 8 個（含第 22 張的規格到實作）、停下來想 3 處（第 20、26、28 張；第 20 張是隨堂演練，約 8 分鐘）、約 45 分鐘
-第 3 堂：概念 3 個（mutable 與 immutable collection、structural sharing、下週預告）、課堂練習 30 分鐘（第 35–37 張）、約 52 分鐘
-Figure 4.8 原本排在第 3 堂，為了平衡時間移到第 2 堂結尾，接在第 27 張的 trace 之後。
+第 1 堂：概念 9 個（含第 8 張的 class-05 回顧、第 13 張的推論、第 14–15 張的兩條規則）、停下來想 1 處（第 6 張）、約 46 分鐘
+第 2 堂：概念 8 個（含第 21 張的規格到實作）、停下來想 3 處（第 19、25、27 張；第 19 張是隨堂演練，約 8 分鐘）、約 45 分鐘
+第 3 堂：概念 3 個（mutable 與 immutable collection、structural sharing、下週預告）、課堂練習 30 分鐘（第 34–36 張）、約 52 分鐘
+Figure 4.8 原本排在第 3 堂，為了平衡時間移到第 2 堂結尾，接在第 26 張的 trace 之後。
 程式都在 eopl3/chapter4/implicit-refs 下用 racket -i -t top.scm 跑過。 -->
 
 ---
@@ -75,8 +75,8 @@ class-10 第 10 張的 EXPLICIT-REFS 欄，加上 IMPLICIT-REFS 欄：
 |---|---|---|---|
 | syntax | 加 `newref`、`deref`、`setref`（p.104；production 在 p.108） | 加 `set`（p.116）；repo 的文法沒有 `newref`、`deref`、`setref` | 7、10 |
 | values | ExpVal = Int + Bool + Proc + Ref(ExpVal)；DenVal = ExpVal（p.104） | ExpVal = Int + Bool + Proc；DenVal = Ref(ExpVal)（p.113） | 5–7 |
-| environments | 沒有改：binding structures 維持不變（p.104） | `extend-env` 存進去的 DenVal 變成 Ref；`apply-env` 的 `extend-env-rec` 分支改成配置 location（p.119） | 25–26 |
-| behavior | 規格多帶一個 store（pp.107–109） | var-exp 多查一層 store（p.117）；新增 assign-exp；call 與 let 配置新 location（p.118） | 13–16、19 |
+| environments | 沒有改：binding structures 維持不變（p.104） | `extend-env` 存進去的 DenVal 變成 Ref；`apply-env` 的 `extend-env-rec` 分支改成配置 location（p.119） | 24–25 |
+| behavior | 規格多帶一個 store（pp.107–109） | var-exp 多查一層 store（p.117）；新增 assign-exp；call 與 let 配置新 location（p.118） | 13–15、18 |
 
 ---
 
@@ -174,7 +174,7 @@ p.116：先在 environment 裡查到變數綁定的 location，再到 store 裡�
 
 ![h:300](img/var-lookup.png)
 
-圖是我依 p.116 的文字畫的。`x`、location 2、⌈10⌉ 取自 repo 的 init env：`x` 的初始值是 10，放在 location 2（第 2 堂第 22 張會實測）。
+圖是我依 p.116 的文字畫的。`x`、location 2、⌈10⌉ 取自 repo 的 init env：`x` 的初始值是 10，放在 location 2（第 2 堂第 21 張會實測）。
 
 <!-- 圖的原始碼：img/var-lookup.mmd（Mermaid），設定檔 img/config.json。上下兩列的節點位置對齊；Ch3 那一列中間的虛線框標「沒有這一層」。 -->
 
@@ -252,28 +252,6 @@ p.117：Because references are no longer expressed values, we can't make chains 
 
 <!-- _class: small -->
 
-# 4.3 的規格長什麼樣？
-
-| | Ch3 | EXPLICIT-REFS | IMPLICIT-REFS |
-|---|---|---|---|
-| 規則的形式 | `(value-of exp ρ) = val`（p.62） | `(value-of exp ρ σ0) = (val, σ1)`（p.107） | 同 EXPLICIT-REFS |
-| ρ：變數 → ? | DenVal = ExpVal（p.61） | DenVal = ExpVal（p.104） | location（p.113、p.117） |
-| σ：location → ? | 沒有 store | storable value = ExpVal（p.106） | ExpVal：locations contain expressed values（p.113） |
-
-「形式和 4.2.1 相同」是我的解讀：p.118 說要重寫 call 和 let 的規則來呈現被修改的 store，課本沒有明講其他規則沿用 4.2.1 的形式。
-
-把 ρ、σ 兩層接起來，就是 var-exp 的規則（p.117）：
-
-```
-(value-of (var-exp var) ρ σ) = (σ(ρ(var)), σ)
-```
-
-下一張看其他規則要改哪幾條。
-
----
-
-<!-- _class: small -->
-
 # 規格要改哪幾條？從三個運算的消失推出來
 
 p.113：References are no longer expressed values. `newref` 產生 Ref，`deref`、`setref` 接收 Ref，所以它們不能再是 expression，這三個 syntax 消失（第 7 張）。但配置、取值、修改還是要發生，所以藏進其他 syntax 的 behavior（推論是我的整理）：
@@ -294,8 +272,6 @@ p.113：References are no longer expressed values. `newref` 產生 Ref，`deref`
 <!-- _class: small -->
 
 # var-exp 的規則：Ch3（p.62）與 4.3（p.117）
-
-第 13 張的例子，逐項拆開：
 
 ```
 Ch3  (p.62)    (value-of (var-exp var) ρ)   = (apply-env ρ var)
@@ -350,8 +326,8 @@ p.117：The environment now always binds variables to locations, so when a varia
 2. **domain equations**：Ref 從 ExpVal 移到 DenVal；p.61 說的「Ch4 的 ExpVal 與 DenVal 不同」在這裡第一次成立；Ch3 的 var-exp 等式靠兩者相同才成立（第 5–8 張）
 3. **兩層查找與 `set`**：environment 給 location，store 給內容；`set` 左邊的 Identifier 不被 dereference，用到的是 location（p.116，第 9–10 張）
 4. **取捨**：變數可以改，但拿不到 reference，做不出 reference 鏈（p.117，第 12 張）
-5. **規格的形式與要改哪幾條**：形式和 4.2 相同，ρ 給 location、σ 給 ExpVal；`newref`、`deref`、`setref` 消失，藏進 call、let、letrec、var-exp、assign-exp，其他規則不用改（第 13–14 張）
-6. **兩條規則**：var-exp 是 `(σ(ρ(var)), σ)`；assign-exp 依原文的順序是查左邊的 location、算右邊、修改那一格、回傳 27（pp.117–118，第 15–16 張）
+5. **規格要改哪幾條**：`newref`、`deref`、`setref` 消失，藏進 call、let、letrec、var-exp、assign-exp，其他規則不用改（第 13 張）
+6. **兩條規則**：var-exp 是 `(σ(ρ(var)), σ)`；assign-exp 依原文的順序是查左邊的 location、算右邊、修改那一格、回傳 27（pp.117–118，第 14–15 張）
 
 ---
 
@@ -394,7 +370,7 @@ p.118 的文字描述：
 
 The right-hand side exp1 is evaluated, and the value of the let expression is the value of the body, evaluated in an environment where the variable var is bound to a new location containing the value of exp1.
 
-**停下來想**（隨堂演練，5 分鐘）：仿照第 16、19 張，寫出
+**停下來想**（隨堂演練，5 分鐘）：仿照第 15、18 張，寫出
 
 ```
 (value-of (let-exp var exp1 body) ρ σ0) = ?
@@ -402,7 +378,7 @@ The right-hand side exp1 is evaluated, and the value of the let expression is th
 
 提示：exp1 求值時可能改 store。新的 location 要不在哪一個 store 的 domain 裡？
 
-<!-- 答案在第 21 張。 -->
+<!-- 答案在第 20 張。 -->
 
 ---
 
@@ -422,7 +398,7 @@ The right-hand side exp1 is evaluated, and the value of the let expression is th
 | body 從 σ1 開始 | exp1 的 effect 要留給 body（同 class-10 的 diff-exp 規則，p.107） |
 | 條件寫 `l ∉ dom(σ1)` | exp1 求值時可能也配置了 location，例如 `let y = let z = 1 in z in ...` |
 
-第 24 張的程式可以拿來對照這條規則。
+第 23 張的程式可以拿來對照這條規則。
 
 <!-- 講者備註：常見的錯：寫成 [l=val1]σ0，等於丟掉 exp1 對 store 的修改；或寫成 l ∉ dom(σ0)，l 可能和 exp1 配置的 location 撞在一起。 -->
 
@@ -432,13 +408,13 @@ The right-hand side exp1 is evaluated, and the value of the let expression is th
 
 # 從規格到實作：哪些程式要改？
 
-p.118：Now we are ready to modify the interpreter. 照第 14 張的對應：
+p.118：Now we are ready to modify the interpreter. 照第 13 張的對應：
 
 | 運算 | 程式裡藏在哪裡 | 頁碼 | 程式碼 |
 |---|---|---|---|
-| `deref` | var-exp clause：`(deref (apply-env env var))` | p.118 | 第 23 張 |
-| `setref` | 新增的 assign-exp clause：`(setref! (apply-env env var) ...)` | p.118 | 第 23 張 |
-| `newref` | 四個建立 binding 的位置（p.118：exactly four places）：init env（`init-env`）、let（let-exp clause）、procedure call（`apply-procedure`）、letrec（`apply-env` 的 `extend-env-rec` 分支） | pp.118–119 | 下方 REPL；第 24、26 張 |
+| `deref` | var-exp clause：`(deref (apply-env env var))` | p.118 | 第 22 張 |
+| `setref` | 新增的 assign-exp clause：`(setref! (apply-env env var) ...)` | p.118 | 第 22 張 |
+| `newref` | 四個建立 binding 的位置（p.118：exactly four places）：init env（`init-env`）、let（let-exp clause）、procedure call（`apply-procedure`）、letrec（`apply-env` 的 `extend-env-rec` 分支） | pp.118–119 | 下方 REPL；第 23、25 張 |
 
 store 模組不用改（我的解讀）：規則對 σ 只有配置、讀、改，4.2.3 的三個函式就夠用。
 
@@ -469,8 +445,8 @@ init env：程式沒有 binding，store 也有三格（`i`、`v`、`x`）：
 
 | 程式 | 對到第幾張的規則 |
 |---|---|
-| `(deref (apply-env env var))` | 第 15 張的 `σ(ρ(var))` |
-| `(setref! (apply-env env var) ...)` | 第 16 張的 `[ρ(var)=val1]σ1`；`var` 只經過 `apply-env`，沒有 `deref` |
+| `(deref (apply-env env var))` | 第 14 張的 `σ(ρ(var))` |
+| `(setref! (apply-env env var) ...)` | 第 15 張的 `[ρ(var)=val1]σ1`；`var` 只經過 `apply-env`，沒有 `deref` |
 
 ---
 
@@ -498,13 +474,13 @@ init env：程式沒有 binding，store 也有三格（`i`、`v`、`x`）：
 
 兩組都只差一處：`val1`、`val` 換成 `(newref val1)`、`(newref val)`。
 
-對照第 21 張：`(value-of exp1 env)` 先跑完才呼叫 `newref`，所以新 location 配置在 exp1 的 effect 之後，對應規則的 `l ∉ dom(σ1)`。
+對照第 20 張：`(value-of exp1 env)` 先跑完才呼叫 `newref`，所以新 location 配置在 exp1 的 effect 之後，對應規則的 `l ∉ dom(σ1)`。
 
 ---
 
 # 一個值在 environment 裡走過哪幾步？
 
-這張是我的解讀，依第 23–24 張的程式整理：
+這張是我的解讀，依第 22–23 張的程式整理：
 
 ```
 value-of 算出 ExpVal
@@ -547,7 +523,7 @@ p.119：這裡用 multideclaration `letrec`（Exercise 3.32）。程式裡的 `l
 
 **停下來想**：`letrec f(x) = x in -((f 1),(f 2))` 跑完，store 裡有幾格？各是誰配置的？
 
-<!-- 答案在第 27 張。 -->
+<!-- 答案在第 26 張。 -->
 
 ---
 
@@ -592,9 +568,9 @@ in ((f 44) 33)
 **停下來想**：
 
 - 程式的值是多少？
-- 跑完之前，`newref` 一共被呼叫幾次？每一次是第 22 張四種地方的哪一種？
+- 跑完之前，`newref` 一共被呼叫幾次？每一次是第 21 張四種地方的哪一種？
 
-<!-- 答案在第 29 張。 -->
+<!-- 答案在第 28 張。 -->
 
 ---
 
@@ -633,10 +609,10 @@ repo 的格式和課本不同：課本有 entering let f 這一行；repo 的 ne
 
 # 第 2 堂回顧
 
-1. **procedure call 與 let**：配置新的 location，條件是不在 σ 的 domain 裡；和第 1 堂的 var-exp、assign-exp 合起來，課本寫出四條規則，letrec 的留給 Exercise 4.18（pp.117–118，第 13–16、19–21 張）
-2. **三個運算在程式裡的位置**：`deref` 在 var-exp；`setref!` 在 assign-exp；`newref` 在四個建立 binding 的位置：init env、let、procedure call、letrec。store 模組不用改（pp.118–119，第 22–25 張）
-3. **letrec**：每次查到 letrec 綁定的名字，都重新組 closure 並配置一格（p.119，第 26–27 張）
-4. **Figure 4.8**：trace 裡 environment 綁的是 location 的編號；`set x` 改的是 location 4（p.120，第 28–29 張）
+1. **procedure call 與 let**：配置新的 location，條件是不在 σ 的 domain 裡；和第 1 堂的 var-exp、assign-exp 合起來，課本寫出四條規則，letrec 的留給 Exercise 4.18（pp.117–118，第 13–15、18–20 張）
+2. **三個運算在程式裡的位置**：`deref` 在 var-exp；`setref!` 在 assign-exp；`newref` 在四個建立 binding 的位置：init env、let、procedure call、letrec。store 模組不用改（pp.118–119，第 21–24 張）
+3. **letrec**：每次查到 letrec 綁定的名字，都重新組 closure 並配置一格（p.119，第 25–26 張）
+4. **Figure 4.8**：trace 裡 environment 綁的是 location 的編號；`set x` 改的是 location 4（p.120，第 27–28 張）
 
 ---
 
@@ -737,8 +713,8 @@ Clojure 的 vector 內部是一棵樹。`(def v2 (assoc v1 5 99))`，其中 `v1`
 
 可以用的材料：
 
-- 第 28–29 張：Figure 4.8 的程式與 trace
-- 第 22、24、26 張：`newref` 在程式裡的四個位置
+- 第 27–28 張：Figure 4.8 的程式與 trace
+- 第 21、23、25 張：`newref` 在程式裡的四個位置
 - REPL：`eopl3/chapter4/implicit-refs` 下跑 `racket -i -t top.scm`
 
 30 分鐘後對答案。
@@ -796,10 +772,10 @@ set times4 = ... 把這個 closure 放進 l。之後 body 查 times4：ρ1 → l
 
 1. **domain equations**：Ref 從 ExpVal 移到 DenVal，每個變數都綁到一個 location；var-exp 查兩層（pp.113、116–117，第 5–9 張）
 2. **取捨**：變數可以用 `set` 改，但拿不到 reference，做不出 reference 鏈（p.117，第 12 張）
-3. **規格**：`newref`、`deref`、`setref` 消失，藏進 call、let、letrec、var-exp、assign-exp；其他規則不用改（pp.113、117–118，第 13–16、19–21 張）
-4. **實作**：`deref` 在 var-exp，`setref!` 在 assign-exp，`newref` 在四個建立 binding 的位置；store 模組不用改（pp.118–119，第 22–25 張）
-5. **用 trace 驗證**：letrec 每次查找都配置一格；Figure 4.8 的 environment 綁的是 location 的編號（pp.119–120，第 26–29 張）
-6. **mutable 與 immutable collection**：JavaScript 的 array 改了，拿到它的名字都看得到；Clojure 的 vector 產生新版本，效果近似 deep clone，內部用 tree 共用沒改的部分（第 32–34 張）
+3. **規格**：`newref`、`deref`、`setref` 消失，藏進 call、let、letrec、var-exp、assign-exp；其他規則不用改（pp.113、117–118，第 13–15、18–20 張）
+4. **實作**：`deref` 在 var-exp，`setref!` 在 assign-exp，`newref` 在四個建立 binding 的位置；store 模組不用改（pp.118–119，第 21–24 張）
+5. **用 trace 驗證**：letrec 每次查找都配置一格；Figure 4.8 的 environment 綁的是 location 的編號（pp.119–120，第 25–28 張）
+6. **mutable 與 immutable collection**：JavaScript 的 array 改了，拿到它的名字都看得到；Clojure 的 vector 產生新版本，效果近似 deep clone，內部用 tree 共用沒改的部分（第 31–33 張）
 
 ---
 
@@ -823,7 +799,7 @@ p.124：A pair consists of two locations, each of which is independently assigna
 (num-val 99)
 ```
 
-改 `q` 的左格，`p` 讀得到：pair 是 mutable collection，和第 32 張的 JavaScript array 同一類。課本 Figure 4.11 寫成 `setleft(glo, 99)`；repo 的文法是 `setleft q = 99`。
+改 `q` 的左格，`p` 讀得到：pair 是 mutable collection，和第 31 張的 JavaScript array 同一類。課本 Figure 4.11 寫成 `setleft(glo, 99)`；repo 的文法是 `setleft q = 99`。
 
 下週的問題：第 3 張的四角度表，MUTABLE-PAIRS 那一欄要怎麼填？
 
