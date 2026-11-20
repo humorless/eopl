@@ -60,9 +60,9 @@ style: |
 <!-- 講者備註：
 第 1 堂：概念 10 個（safe evaluation、五個條件、type error、條件與 extractor 的對應、不算 type error 的失敗、sound、接受夠多的程式、safe 一般而言不可判定（我的解讀）、會被拒絕的可執行程式、proc 的值不求值 body（class-06 回顧））、停下來想 1 處（第 9 張）、約 40 分鐘
 第 2 堂：概念 7 個（type structure、Type 的文法、值與型別的例子、沒有型別的值、型別裡的 t、Definition 7.1.1、一個值的多個型別）、停下來想 2 處（第 19、26 張；Exercise 7.1 約 12 分鐘）、約 39 分鐘
-第 3 堂：概念 10 個（type-of 的規格、值的型別與運算式的型別、well-typed、四條簡單規則、let 與 if、call、四角度對照、derivation、proc 規則、兩種設計；其中 clj-kondo 是課外補充）、停下來想 2 處（第 35、40 張）、約 41 分鐘；超時先刪第 44 張，再刪第 31 張
+第 3 堂：概念 10 個（type-of 的規格、值的型別與運算式的型別、well-typed、四條簡單規則、let 與 if、call、四角度對照、derivation、proc 規則、兩種設計；其中 clj-kondo 是課外補充）、停下來想 2 處（第 36、41 張）、約 43 分鐘；超時先刪第 45 張，再刪第 31 張
 每張的分鐘數是我的假設，沒有實測。
-EOPL 的程式都在 mwand/eopl3 的 chapter3/letrec-lang 下用 racket -i -t top.scm 跑過（Racket v8.10）；第 46 張在 chapter7/checked 下跑過；clj-kondo 用 babashka v1.12.196 以 pod 載入 clj-kondo v2024.08.01 跑過。
+EOPL 的程式都在 mwand/eopl3 的 chapter3/letrec-lang 下用 racket -i -t top.scm 跑過（Racket v8.10）；第 47 張在 chapter7/checked 下跑過；clj-kondo 用 babashka v1.12.196 以 pod 載入 clj-kondo v2024.08.01 跑過。
 本週沒有作業。HW5 在 week 14 上課前繳交；依課綱，HW6 在 week 15 發布。 -->
 
 ---
@@ -261,7 +261,7 @@ body 要到呼叫時才求值（p.76）：
 
 第 5 張的條件是對「每一次求值」說的。前兩個程式執行時，`(3 x)`、`(f x)` 一次都沒被求值，所以它們的求值是 safe。
 
-<!-- 講者備註：前兩列是 p.234 的程式，第三列是我加的（同第 11 張）。p.76 的兩條等式是 class-06 教過的 PROC 規格，這裡是回顧。對照 Clojure：(fn [x] (3 x)) 本身不會出錯，((fn [x] (3 x)) 7) 才丟 ClassCastException；第 44 張的 clj-kondo 例子是同一個現象。 -->
+<!-- 講者備註：前兩列是 p.234 的程式，第三列是我加的（同第 11 張）。p.76 的兩條等式是 class-06 教過的 PROC 規格，這裡是回顧。對照 Clojure：(fn [x] (3 x)) 本身不會出錯，((fn [x] (3 x)) 7) 才丟 ClassCastException；第 45 張的 clj-kondo 例子是同一個現象。 -->
 
 ---
 
@@ -549,41 +549,58 @@ p.238（改寫）：
 
 ---
 
+# const 與 var：`type-of` 與 `value-of` 各寫成什麼？（p.239；p.62）
+
+| | `type-of`（p.239） | `value-of`（p.62） |
+|---|---|---|
+| const | `(type-of (const-exp num) tenv) = int` | `(value-of (const-exp n) ρ) = (num-val n)` |
+| var | `(type-of (var-exp var) tenv) = tenv(var)` | `(value-of (var-exp var) ρ) = (apply-env ρ var)` |
+
+| | `type-of` | `value-of` |
+|---|---|---|
+| 第二個輸入 | tenv：變數 → 型別 | ρ：變數 → 值 |
+| const 的結果 | 型別 `int` | 值 `(num-val n)` |
+| var 的結果 | 到 tenv 查型別 | 到 ρ 查值 |
+
+我的解讀：四條都沒有橫線上方的前提，依 p.3 的定義都是 axiom（A rule with no hypotheses is called an axiom）。
+
+---
+
 <!-- _class: small -->
 
-# const、var、zero?、diff：`type-of` 規則與 `value-of` 規則對照
+# zero? 與 diff：`type-of` 與 `value-of` 各寫成什麼？（p.239；pp.62、65）
 
-`type-of`（p.239）：
+**zero?**
 
 ```
-(type-of (const-exp num) tenv) = int
-(type-of (var-exp var) tenv) = tenv(var)
-
+;; type-of (p.239)
       (type-of exp1 tenv) = int
 ---------------------------------------
 (type-of (zero?-exp exp1) tenv) = bool
 
-(type-of exp1 tenv) = int    (type-of exp2 tenv) = int
-------------------------------------------------------
-      (type-of (diff-exp exp1 exp2) tenv) = int
-```
-
-`value-of`（p.62、p.65）：
-
-```
-(value-of (const-exp n) ρ) = (num-val n)
-(value-of (var-exp var) ρ) = (apply-env ρ var)
-(value-of (diff-exp exp1 exp2) ρ)
-  = (num-val (- (expval->num (value-of exp1 ρ)) (expval->num (value-of exp2 ρ))))
-
+;; value-of (p.65)
            (value-of exp1 ρ) = val1
 -----------------------------------------------------------
 (value-of (zero?-exp exp1) ρ) = (bool-val #t) if (expval->num val1) = 0
                                 (bool-val #f) if (expval->num val1) ≠ 0
 ```
 
-我的解讀：`value-of` 呼叫 `expval->num` 的地方，在 `type-of` 的規則裡對應到橫線上方的前提（hypothesis，p.3）`(type-of exp1 tenv) = int`。
+**diff**
 
+```
+;; type-of (p.239)
+(type-of exp1 tenv) = int    (type-of exp2 tenv) = int
+------------------------------------------------------
+      (type-of (diff-exp exp1 exp2) tenv) = int
+
+;; value-of (p.62)
+(value-of (diff-exp exp1 exp2) ρ)
+  = (num-val (- (expval->num (value-of exp1 ρ)) (expval->num (value-of exp2 ρ))))
+```
+
+課本的寫法不對稱：`type-of` 兩條都寫成推論規則（p.239）；`value-of` 的 zero? 寫成推論規則（p.65），diff 寫成等式（p.62）。
+
+我的解讀：`value-of` 呼叫 `expval->num` 的地方，在 `type-of` 裡對應到橫線上方的前提（hypothesis，p.3）`(type-of exp1 tenv) = int`。
 ---
 
 <!-- _class: small -->
@@ -618,7 +635,7 @@ if zero?(0) then 1 else zero?(1)
 ```
 
 1. 在 letrec-lang 跑，得到什麼？
-2. 依第 34 張的 if 規則，它有沒有型別？
+2. 依第 35 張的 if 規則，它有沒有型別？
 3. 把它放到第 13 張的文氏圖，屬於哪一區？
 
 **停下來想**（3 分鐘）。
@@ -684,7 +701,7 @@ if 規則要求 `exp2` 與 `exp3` 的型別都是同一個 t。`int` 與 `bool` 
 
 我的解讀：`type-of` 和 `value-of` 同結構，在型別上把直譯器跑一遍。p.233 對 §3.7 的 translator 也這樣說：長得像直譯器，傳的是 static environment。
 
-差異：`value-of` 的 if 只算一個分支；`type-of` 兩個分支都算（第 34 張）。
+差異：`value-of` 的 if 只算一個分支；`type-of` 兩個分支都算（第 35 張）。
 
 ---
 
@@ -721,9 +738,9 @@ ch1 p.5 的 derivation tree：前提（hypothesis）在橫線上面，結論（c
 
 第 3 張的第三列，`expval->num` 在執行時報錯。
 
-1. 照第 39 張的方式，從下往上寫 derivation tree
+1. 照第 40 張的方式，從下往上寫 derivation tree
 2. 哪一條規則的哪一個前提不成立？
-3. 對照第 33 張：這個前提對應 `value-of` 裡的哪一個呼叫？
+3. 對照第 34 張：這個前提對應 `value-of` 裡的哪一個呼叫？
 
 **停下來想**（4 分鐘）。
 
@@ -743,7 +760,7 @@ p.240（改寫）：若 `proc (var) body` 的型別是 `(t1 → t2)`，它預期
 
 p.240：這條規則是 sound 的。若 `type-of` 對 body 的預測正確，它對 `(proc-exp var body)` 的預測也正確。
 
-對照 let 的規則（第 34 張）：
+對照 let 的規則（第 35 張）：
 
 ```
 (type-of exp1 tenv) = t1    (type-of body [var=t1]tenv) = t2
@@ -759,8 +776,8 @@ p.240（改寫）：要計算 proc 運算式的型別時，綁定變數的型別
 
 | 規則 | 例子 | t1 的來源 |
 |---|---|---|
-| let（第 34 張） | `let x = 3 in -(x,1)` | 由 `exp1` 算出：`3 : int`，所以 t1 = `int` |
-| proc（第 41 張） | `proc (x) -(x,1)` | 程式裡找不到（p.240） |
+| let（第 35 張） | `let x = 3 in -(x,1)` | 由 `exp1` 算出：`3 : int`，所以 t1 = `int` |
+| proc（第 42 張） | `proc (x) -(x,1)` | 程式裡找不到（p.240） |
 
 我的解讀：let 的 `x` 有一個對應的運算式 `3`；proc 的 `x` 沒有，引數要等呼叫時才出現。把 proc 規則寫成程式 `type-of` 時，要先有 t1，才能建出 `[x=t1]tenv`、再檢查 body，而規則沒有交代 t1 從哪裡來。
 
@@ -802,7 +819,7 @@ demo.clj:2:17: error: Expected: number, received: string.
 ```
 
 - `f` 沒被呼叫，載入不出錯；呼叫才丟例外，和第 11、12 張的 `proc (x) (3 x)` 一樣
-- clj-kondo 不執行程式，看到 `inc` 要 number、`"a"` 是 string，就報錯。對照第 37 張 call-exp 規則的第二個前提
+- clj-kondo 不執行程式，看到 `inc` 要 number、`"a"` 是 string，就報錯。對照第 38 張 call-exp 規則的第二個前提
 
 我的解讀：clj-kondo 的實作和 `type-of` 結構對應（字面值給型別、local 查 binding、呼叫時比對引數與回傳型別）；差別在沒把握時，`type-of` 拒絕，clj-kondo 放過（不知道的型別當成 `:any`）。
 
@@ -825,10 +842,10 @@ demo.clj:2:17: error: Expected: number, received: string.
 2. **sound 與 conservative**：接受就保證 safe；分析也會拒絕一些執行時不會發生 type error 的程式（p.234，第 8、11–14 張）
 3. **type structure**：分析只追蹤 num-val、bool-val、proc-val 的話，判斷不了 `(f 1)` 這類呼叫的結果；所以要追蹤 procedure 更細的資訊，也就是給它什麼型別的引數、它回傳什麼型別的值。這種更細的資訊，稱為語言的 type structure（pp.235–236，第 17 張）
 4. **Definition 7.1.1**：對 t 做歸納；一個值可以有很多型別，也可以沒有（p.237，第 23、25 張）
-5. **`type-of`**：從子運算式的型別預測整體；if 的兩個分支必須同型（pp.238–239，第 32、34、36 張）
-6. **`type-of` 與 `value-of` 同結構**：tenv 對應 environment，型別對應值。這是我的解讀（第 38 張）
-7. **proc 的規則**：規則是 sound 的，但 t1 沒有來源；補 t1 有 type checking 與 type inference 兩種設計（p.240，第 41–43 張）
-8. **課外補充**：clj-kondo 不執行程式，就能抓到 `(inc "a")`（第 44 張）
+5. **`type-of`**：從子運算式的型別預測整體；if 的兩個分支必須同型（pp.238–239，第 32、35、37 張）
+6. **`type-of` 與 `value-of` 同結構**：tenv 對應 environment，型別對應值。這是我的解讀（第 39 張）
+7. **proc 的規則**：規則是 sound 的，但 t1 沒有來源；補 t1 有 type checking 與 type inference 兩種設計（p.240，第 42–44 張）
+8. **課外補充**：clj-kondo 不執行程式，就能抓到 `(inc "a")`（第 45 張）
 
 ---
 
@@ -851,9 +868,9 @@ p.241 的範例，在 eopl3/chapter7/checked 用 `check` 跑：
 ; check-equal-type!: Types didn't match: bool != int in #(struct:var-exp x)
 ```
 
-下週的問題：第 42 張的 t1，在 `proc (x : int)` 裡從哪裡來？letrec 為什麼還要多寫一個結果型別？
+下週的問題：第 43 張的 t1，在 `proc (x : int)` 裡從哪裡來？letrec 為什麼還要多寫一個結果型別？
 
-<!-- 講者備註：第四個例子不在課本裡，是我加的，用來對照第 42 張；錯誤訊息照實際輸出併成一行，省略了結尾的 [,bt for context]。 -->
+<!-- 講者備註：第四個例子不在課本裡，是我加的，用來對照第 43 張；錯誤訊息照實際輸出併成一行，省略了結尾的 [,bt for context]。 -->
 
 ---
 
