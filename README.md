@@ -20,7 +20,7 @@
 
 ## 講義目錄
 
-目錄編號對應課程週次。第 9 週與第 16 週為考試週，沒有講義；尚未上到的週次會陸續加入。
+目錄編號對應課程週次。第 9 週與第 16 週為考試週，沒有講義。
 
 | 週次 | 主題 | EOPL 章節 | 講義 |
 | ---- | ---- | --------- | ---- |
@@ -36,10 +36,10 @@
 | 10 | EXPLICIT-REFS：store model | 4.1–4.2 | [md](class-10/class-10.md) · [pdf](class-10/class-10.pdf) |
 | 11 | IMPLICIT-REFS：mutable variables | 4.3 | [md](class-11/class-11.md) · [pdf](class-11/class-11.pdf) |
 | 12 | MUTABLE-PAIRS、參數傳遞方式 | 4.4–4.5 | [md](class-12/class-12.md) · [pdf](class-12/class-12.pdf) |
-| 13 | 型別系統簡介 | 7.1–7.2 | |
-| 14 | CHECKED 語言 | 7.3 | |
-| 15 | type checker 實作與複習 | 7.3 | |
-| 16 | 期末考（Ch1–Ch7） | | |
+| 13 | 型別系統簡介：safe evaluation、values and their types、type-of 的規則 | 7.1–7.2 | [md](class-13/class-13.md) · [pdf](class-13/class-13.pdf) |
+| 14 | CHECKED 語言：型別標註、letrec 規則、`check-equal-type!`、checker 實作 | 7.3–7.3.1 | [md](class-14/class-14.md) · [pdf](class-14/class-14.pdf) |
+| 15 | 期末複習；Milner 與 Greenspun：型別保證停在哪一層 | Ch1–Ch4、7.1–7.3 | [md](class-15/class-15.md) · [pdf](class-15/class-15.pdf) |
+| 16 | 期末考（Ch1–Ch4、§7.1–7.3） | | |
 
 ## 範例程式
 
