@@ -965,7 +965,7 @@ query 是資料的例子：(def base '[:find ?oid :where [?o :order/id ?oid]])�
 
 1. **Ch1–Ch3**：直譯器是一支程式；四台代表性的直譯器各改了四角度表的一格；lexical 與 dynamic binding 差在 body 用哪個環境（第 4–13 張）
 2. **value-of 與 apply-X**：`value-of` 對語法分派，`apply-X` 是各種執行時資料型別的 observer。這是我的解讀（第 14–17 張）
-3. **Ch4**：formal parameter 綁到什麼、operand 何時求值，決定同一支程式的值（第 24–26 張）
+3. **Ch4**：有了 assignment，共享才觀察得到，所以要有 store；Ref 放在 ExpVal 還是 DenVal、新 location 在哪裡配置，都是語言設計的選擇，四種傳參方式就是其中的例子（第 21–26 張）
 4. **Ch7**：`check` 接受的程式，執行時沒有 type error，但可能不終止；sound 的代價是拒絕一些不會出錯的程式（第 27–30、34 張）
 5. **Milner 與 Greenspun**：保證停在直譯器的邊界；被直譯的程式要另外檢查；Hickey 的回應是用 spec 把預期寫回去（第 33–42 張）
 6. **json 與 Datalog**：json 欄位是 SQL 裡另開的動態層；datom 的資料模型本身就容得下每筆欄位不同的資料。Clojure 與 Datomic 一開始就把 Greenspun 的三樣東西設計進去。這是我的解讀（第 43–49 張）
