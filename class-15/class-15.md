@@ -271,7 +271,7 @@ in let p = proc (x) -(x,a)
 (num-val 8)
 ```
 
-dynamic 版只改了 `interp.scm` 的三行：
+Ex 3.28（p.82）：dynamic binding 下，body 在「呼叫處的環境」擴充後的環境裡求值。下面三行是我依這個定義改的：
 
 ```diff
 -            (apply-procedure proc arg)))
