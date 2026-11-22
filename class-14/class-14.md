@@ -55,18 +55,19 @@ style: |
 |---|---|
 | 第 1 堂 | CHECKED 的標註、新文法、有標註的 proc 規則（pp.240–241） |
 | 第 2 堂 | letrec 的兩個 tenv 與 letrec 規則；`check-equal-type!`（pp.241–243） |
-| 第 3 堂 | §7.3.1 The Checker：Figures 7.1–7.3；Exercise 7.7；習題 7.5–7.11；HW6（pp.243–248） |
+| 第 3 堂 | §7.3.1 The Checker：Figures 7.1–7.3；HW6（pp.243–246） |
 
 <!-- 講者備註：
-第 1 堂：概念 5 個（proc 的 value-of 與 type-of 對照、CHECKED 的標註要求、結果型別與 procedure 的型別、新文法、有標註的 proc 規則與 run 不看標註）、停下來想 1 處（第 10 張）、約 33 分鐘；時間有剩，可以接著講第 2 堂開頭的第 14–16 張（letrec 的形狀與 tres）
-第 2 堂：概念 8 個（letrec 的形狀、tres 的動機（我的解讀）、兩個 tenv、letrec 規則、與 extend-env-rec 對照、tres 宣告錯時被點名的位置、check-equal-type! 與要怪罪的運算式、type-to-external-form 與 for effect）、停下來想 3 處（第 15、20、23 張）、約 48 分鐘
-第 3 堂：概念 9 個（規則轉寫成程式、init-tenv、if 的兩個 check、call 的兩種錯誤、letrec 的程式、type-of 與 value-of 並排、Exercise 7.7 的錯誤順序、習題地圖（含 emptylist 與 void）、HW6 的 soundness 反例；另有 type hint 1 張課外補充）、停下來想 2 處（第 34、37 張）、約 50 分鐘，偏緊；超時先刪第 44 張，再刪第 41 張
+第 1 堂：概念 7 個（proc 規則的前提怎麼找出來、proc 的 value-of 與 type-of 對照、CHECKED 的標註要求、letrec 為什麼要寫結果型別（我的解讀）、結果型別與 procedure 的型別、新文法、有標註的 proc 規則與 run 不看標註）、沒有停下來想、約 38 分鐘
+第 2 堂：概念 8 個（letrec 的形狀、兩個 tenv、letrec 規則、與 extend-env-rec 對照、tres 宣告錯時被點名的位置、為什麼要比較型別、check-equal-type! 與要怪罪的運算式、type-to-external-form 與 for effect）、沒有停下來想、約 38 分鐘
+第 3 堂：概念 8 個（規則轉寫成程式、init-tenv、if 的兩個 check、call 的兩種錯誤、letrec 的程式、letrec 規則與行號、第 21 張兩個例子各是哪一行報錯、type-of 與 value-of 並排）、沒有停下來想、約 30 分鐘；另外說明 HW6
 每張的分鐘數是我的假設，沒有實測。
-CHECKED 的程式都在 mwand/eopl3 的 chapter7/checked 下跑過（Racket v8.10）；第 36 張的 value-of 對照 chapter3/letrec-lang；第 41 張在 chapter4/explicit-refs 跑過。第 38 張的 Exercise 7.7 版本，是我把 checker.scm 複製一份、改 if-exp 分支後跑的。
-Clojure 用 clojure 1.12.0 的 jar（java -cp ... clojure.main）跑過；clj-kondo v2024.08.01 用執行檔跑過。
+CHECKED 的程式都在 mwand/eopl3 的 chapter7/checked 下跑過（Racket v8.10）；第 35 張的 value-of 對照 chapter3/letrec-lang。
 課綱原本把 §7.3 分在 week 14、15；這次在 week 14 講完，HW6 提前到今天發布，week 15 做期末複習。 -->
 
 ---
+
+<!-- _class: small -->
 
 # 上週停在哪一條規則？（p.240）
 
@@ -87,9 +88,23 @@ p.240（改寫）：
 
 <!-- _class: small -->
 
+# proc 規則的前提，是怎麼找出來的？
+
+p.240 的推理，展開成四步（第 2、3 步的出處是我補的）：
+
+1. 想得到的結論：`proc (var) body` 的型別是 `(t1 → t2)`
+2. 依 Definition 7.1.1（p.237），這表示：拿型別 t1 的引數呼叫它，會回傳 t2 的值（或不終止、或因 type error 以外的錯誤失敗）
+3. 呼叫時發生什麼（p.76）：body 在 `[var=val]ρ` 裡求值，val 是型別 t1 的值
+4. 所以結論成立，需要檢查的前提是：var 是 t1 時，body 的型別是不是 t2。寫成 `type-of` 就是 `(type-of body [var=t1]tenv) = t2`，也就是規則的前提。
+
+
+---
+
+<!-- _class: small -->
+
 # proc 的 `value-of` 與 `type-of` 怎麼對照？
 
-`value-of`（p.76）分兩步：
+`value-of` 分兩步：
 
 ```
 ;; step 1: when the proc expression is evaluated
@@ -101,22 +116,14 @@ p.240（改寫）：
   = (value-of body [var=val]ρ)
 ```
 
-`type-of`（p.240）只有一步：
-
-```
-     (type-of body [var=t1]tenv) = t2
----------------------------------------------
-(type-of (proc-exp var body) tenv) = (t1 → t2)
-```
-
-| | `value-of` | `type-of` |
+| | `value-of`（p.76） | `type-of`（p.240，第 3 張的規則，只有一步） |
 |---|---|---|
 | 遇到 proc 時 | 不碰 body，連同 ρ 打包成 closure | 處理 body |
 | body 在哪裡算 | `[var=val]ρ` | `[var=t1]tenv` |
 | var 綁到的 | val，一個值 | t1，一個型別 |
 | 從哪來 | 呼叫時，由 call-exp 的 rand 算出，交給 `apply-procedure` | 規則沒有交代 |
 
-我的解讀：`value-of` 要到呼叫時才算 body，那時呼叫端已經帶來 val；`type-of` 在定義處就檢查 body，那個位置沒有呼叫端可以提供 t1。
+我的解讀：`value-of` 呼叫時才算 body，val 由呼叫端帶來；`type-of` 在定義處檢查 body，沒有呼叫端提供 t1。
 
 <!-- 講者備註：p.76 的兩條等式是 class-06 教過的 PROC 規格，class-13 第 12 張回顧過。 -->
 
@@ -132,6 +139,44 @@ p.240（改寫）：CHECKED 與 LETREC 相同，只是程式設計師要寫出�
 | CHECKED | `proc (x : int) -(x,1)` | `letrec int double (x : int) = ...` |
 
 `x : int` 補上的，就是 proc 規則缺的 t1。
+
+---
+
+# letrec 為什麼還要寫結果型別？
+
+第 3 張的分析：proc 缺的只有 t1。有了 t1，就能在 `[var=t1]tenv` 裡算 body，算出 t2。
+
+| 程式 | 程式設計師寫出 |
+|---|---|
+| `proc (x : int) -(x,1)` | 參數型別 |
+| `letrec int double (x : int) = ...` | 參數型別、結果型別 |
+
+照第 3 張的分析，letrec 應該也只要寫 `x : int`。CHECKED 為什麼還要求寫前面那個 `int`？
+
+---
+
+<!-- _class: small -->
+
+# letrec 的 body 會用到自己：算 body 途中就要知道結果型別
+
+這是我的解讀；p.240 只寫了 CHECKED 的要求，沒有說理由。
+
+| | proc | letrec |
+|---|---|---|
+| body 裡有沒有用到自己 | 沒有 | 有：遞迴呼叫 |
+| 算 body 時需要什麼 | t1 | t1，還要 p 的型別 `(t1 → t2)` |
+| t2 從哪來 | body 算完就有 | body 還沒算完，就要用到它 |
+
+以 `double` 為例：
+
+```
+letrec int double (x : int) = if zero?(x) then 0 else -((double -(x,1)), -2)
+in double
+```
+
+算 body → 要算 `(double -(x,1))` → 要先知道 `double` 的型別 `(int → ?)` → `?` 要等 body 算完。兩邊互相等待。
+
+寫出結果型別之後，推 body 之前就有 `double : (int → int)` 可用。第 2 堂會看到 p.242 的規則怎麼用它：先放進 tenv，推完 body 再比對。
 
 ---
 
@@ -240,33 +285,11 @@ p.241 的版本：
 
 ---
 
-# 停下來想：同一個 body，三種標註
+<!-- _class: small -->
 
-```
-proc (x : int) x
-proc (x : bool) x
-proc (x : (int -> int)) x
-```
+# 標註寫錯了，`check` 和 `run` 各會怎樣？
 
-1. 依第 9 張的 p.241 規則，各推出什麼型別？
-2. 推出的型別裡，哪一部分來自標註？
-
-**停下來想**（3 分鐘）。
-
----
-
-# 對答案：標註寫錯了，`check` 和 `run` 各會怎樣？
-
-```
-> (check "proc (x : int) x")
-'(int -> int)
-> (check "proc (x : bool) x")
-'(bool -> bool)
-> (check "proc (x : (int -> int)) x")
-'((int -> int) -> (int -> int))
-```
-
-參數的型別就是標註，結果的型別由 body 算出。標註寫錯的話：
+這個例子不在課本裡，是我加的。
 
 ```
 > (check "(proc (x : bool) -(x,1) 5)")
@@ -276,17 +299,9 @@ proc (x : (int -> int)) x
 (num-val 4)
 ```
 
-`run` 不看標註。chapter7/checked 的 `interp.scm` 第 56–58 行：
+`run` 不看標註：chapter7/checked 的 `interp.scm` 第 56–58 行，`(proc-exp (bvar ty body) ...)` 取出 `ty` 之後沒有用到；letrec 分支（第 65–67 行）的 `ty1`、`ty2` 也一樣。
 
-```scheme
-(proc-exp (bvar ty body)
-  (proc-val
-    (procedure bvar body env)))
-```
-
-`ty` 從語法樹取出來之後，沒有被用到；letrec 分支（第 65–67 行）的 `ty1`、`ty2` 也一樣。
-
-<!-- 講者備註：(proc (x : bool) -(x,1) 5) 不在課本裡，是我加的。它執行時沒有 type error，check 拒絕：落在 class-13 文氏圖的藍色環狀區。把標註改成 x : int，check 得 'int。錯誤訊息省略了結尾的 [,bt for context]。 -->
+<!-- 講者備註：這個程式執行時沒有 type error，check 拒絕：落在 class-13 文氏圖的藍色環狀區。把標註改成 x : int，check 得 'int。錯誤訊息省略了結尾的 [,bt for context]。 -->
 
 ---
 
@@ -295,11 +310,13 @@ proc (x : (int -> int)) x
 # 第 1 堂回顧
 
 1. **proc 規則的缺口**：t1 在程式裡找不到；補 t1 有 type checking 與 type inference 兩種設計（p.240，第 3 張）
-2. **對照 `value-of`**：`value-of` 呼叫時才算 body，val 由呼叫端帶來；`type-of` 在定義處檢查 body，沒有呼叫端提供 t1。這是我的解讀（p.76，第 4 張）
-3. **CHECKED 的標註**：每個綁定變數寫型別；letrec 另外寫結果型別（p.240，第 5 張）
-4. **結果型別與 procedure 的型別**：`double` 的結果型別是 `int`，`double` 的型別是 `(int -> int)`（p.241，第 7 張）
-5. **新文法**：proc 多一個參數型別，letrec 多兩個型別（p.241，第 8 張）
-6. **有標註的 proc 規則**：tvar 來自語法樹；`run` 不看標註（p.241，第 9–11 張）
+2. **前提怎麼找出來**：結論說 proc 的型別是 `(t1 → t2)`；呼叫時 body 在 var 綁到 t1 的值的情況下求值，所以結論成立，需要檢查的前提是 `(type-of body [var=t1]tenv) = t2`（pp.237、240，p.76，第 4 張）
+3. **對照 `value-of`**：`value-of` 呼叫時才算 body，val 由呼叫端帶來；`type-of` 在定義處檢查 body，沒有呼叫端提供 t1。這是我的解讀（p.76，第 5 張）
+4. **CHECKED 的標註**：每個綁定變數寫型別；letrec 另外寫結果型別（p.240，第 6 張）
+5. **letrec 為什麼要寫結果型別**：body 會遞迴呼叫自己，算 body 途中就要用到 p 的型別。這是我的解讀（第 7、8 張）
+6. **結果型別與 procedure 的型別**：`double` 的結果型別是 `int`，`double` 的型別是 `(int -> int)`（p.241，第 10 張）
+7. **新文法**：proc 多一個參數型別，letrec 多兩個型別（p.241，第 11 張）
+8. **有標註的 proc 規則**：tvar 來自語法樹；`run` 不看標註（p.241，第 12、13 張）
 
 ---
 
@@ -309,6 +326,8 @@ proc (x : (int -> int)) x
 ## letrec 規則與 `check-equal-type!`（pp.241–243）
 
 ---
+
+<!-- _class: small -->
 
 # 典型的 letrec 長什麼樣？（pp.241–242）
 
@@ -328,36 +347,7 @@ p.242（改寫）：這個運算式宣告一個名為 p 的 procedure，參數 v
 | eproc-body | `if zero?(x) then 0 else -((double -(x,1)), -2)` |
 | eletrec-body | `double` |
 
----
-
-# 停下來想：letrec 為什麼還要寫 `tres`？
-
-把 `double` 的結果型別拿掉：
-
-```
-letrec double (x : int) = if zero?(x)
-                          then 0
-                          else -((double -(x,1)), -2)
-in double
-```
-
-試著從 eproc-body 的子運算式開始推型別。
-
-1. 推到 `(double -(x,1))` 時，需要哪個型別？
-2. 這個型別從哪裡拿？
-
-**停下來想**（4 分鐘）。
-
----
-
-# 對答案：遞迴呼叫的型別從哪裡來？
-
-| 步驟 | 需要 | 來源 |
-|---|---|---|
-| 推 `(double -(x,1))` | `double` 的型別 `(int → ?)` | 要先知道結果型別 |
-| 推出結果型別 | eproc-body 的型別 | 要先推完 `(double -(x,1))` |
-
-為什麼要在意（我的解讀）：推 eproc-body 時就要用到 `double` 的型別，而 `double` 的結果型別要等 eproc-body 推完才知道，兩件事互相等待。p.240 只寫了 CHECKED 要求結果型別，沒有寫理由。寫出 `tres`，推 body 之前 `double` 的型別就有了：`(int → int)`。
+為什麼要寫 tres，見第 7、8 張。
 
 ---
 
@@ -425,101 +415,74 @@ p.83（改寫）：記 ρ1 為 `extend-env-rec` 產生的 environment。在 ρ1 
 
 ---
 
-# 停下來想：寫出 `double` 的推導
-
-```
-letrec int double (x : int) = if zero?(x)
-                              then 0
-                              else -((double -(x,1)), -2)
-in double
-```
-
-記號沿用 class-13 第 39 張：`e : t` 是 `(type-of e tenv) = t` 的縮寫。
-
-- `tenv1 = [double=(int → int)]tenv0`
-- `tenv2 = [x=int]tenv1`
-
-**停下來想**（6 分鐘）：樹太寬，可以寫成編號的判斷，每一條註明用了哪一條規則、哪幾條前面的判斷。
-
----
-
 <!-- _class: small -->
 
-# 對答案：`double` 的推導
+# `double` 的推導（p.242 的 letrec 規則）
+
+推導不在課本裡，規則在 pp.239–242。記號同 class-13 第 39 張；`tenv1 = [double=(int → int)]tenv0`，`tenv2 = [x=int]tenv1`。
 
 | # | 判斷 | 規則與依據 |
 |---|---|---|
 | 1 | `x : int`（tenv2） | var，`tenv2(x)` |
 | 2 | `zero?(x) : bool`（tenv2） | zero?，(1) |
-| 3 | `0 : int` | const |
-| 4 | `double : (int → int)`（tenv2） | var，`tenv2(double)`，就是宣告的型別 |
-| 5 | `-(x,1) : int`（tenv2） | diff，(1) 與 `1 : int` |
-| 6 | `(double -(x,1)) : int`（tenv2） | call，(4)(5) |
-| 7 | `-2 : int` | const |
-| 8 | `-((double -(x,1)), -2) : int`（tenv2） | diff，(6)(7) |
-| 9 | `if ... : int`（tenv2） | if，(2)(3)(8) |
-| 10 | (9) 的 `int` 等於宣告的 tres `int` | letrec 第一個前提 |
-| 11 | `double : (int → int)`（tenv1） | var，letrec 第二個前提 |
-| 12 | 這個 letrec 運算式 `: (int → int)`（tenv0） | letrec，(10)(11) |
+| 3 | `double : (int → int)`（tenv2） | var，`tenv2(double)`，就是宣告的型別 |
+| 4 | `-(x,1) : int`（tenv2） | diff，(1) 與 `1 : int` |
+| 5 | `(double -(x,1)) : int`（tenv2） | call，(3)(4) |
+| 6 | `-((double -(x,1)), -2) : int`（tenv2） | diff，(5) 與 `-2 : int` |
+| 7 | `if ... : int`（tenv2） | if，(2)、`0 : int`、(6) |
+| 8 | (7) 的 `int` 等於宣告的 tres `int` | letrec 第一個前提 |
+| 9 | `double : (int → int)`（tenv1） | var，letrec 第二個前提 |
+| 10 | 這個 letrec 運算式 `: (int → int)`（tenv0） | letrec，(8)(9) |
 
 ---
 
-# `tres` 宣告錯了，`check` 點名誰？
+<!-- _class: small -->
 
-把結果型別寫成 `bool`：
+# 結果型別宣告錯了，`check` 為什麼怪罪不同的地方？
 
-```
-> (check "letrec bool double (x : int) = if zero?(x) then 0 else -((double -(x,1)), -2) in (double 3)")
-; check-equal-type!: Types didn't match: bool != int in
-; #(struct:call-exp #(struct:var-exp double) #(struct:diff-exp #(struct:var-exp
-;   x) #(struct:const-exp 1)))
-> (run "letrec bool double (x : int) = if zero?(x) then 0 else -((double -(x,1)), -2) in (double 3)")
-(num-val 6)
-```
+這兩個例子不在課本裡，是我加的。兩個程式 `run` 都沒有 type error，`check` 都拒絕。
 
-| 第 21 張的步驟 | 宣告 `bool` 之後 |
-|---|---|
-| (4) `double` 的型別 | `(int → bool)` |
-| (6) `(double -(x,1))` | `bool` |
-| (8) diff 要求 `int` | 不成立，推導在這裡停下 |
+| 程式 | `check` 怪罪 | 矛盾出現在 |
+|---|---|---|
+| `letrec bool double (x : int) = ... in (double 3)` | `(double -(x,1))` | (a) |
+| `letrec int f (x : int) = zero?(x) in (f 0)` | `zero?(x)` | (b) |
 
-被點名的是遞迴呼叫。宣告的 tres 在推 body 之前就放進 tenv，推導還沒走到第一個前提的比對，就先停下來了。
+letrec 規則（p.242）用了宣告的 tres 兩次：
+- (a) 推 body 之前，放進 tenv：`[p=(tvar → tres)]`
+- (b) 推完 body 之後，和 body 的型別比對：第一個前提的 `= tres`
 
-<!-- 講者備註：錯誤訊息照 REPL 的實際輸出，省略結尾的 [,bt for context]。 -->
+推導先經過 (a)，再到 (b)；第一個矛盾在哪，就停在哪。第一例的遞迴呼叫被推成 `bool`，再拿去做 diff，在 (a) 就矛盾了；第二例的 body 沒有遞迴呼叫，要到 (b) 才矛盾。
 
----
+為什麼不直接怪罪宣告（我的解讀）：checker 把宣告當成假設，分不出是宣告寫錯，還是用的地方寫錯。
 
-# 停下來想：`letrec int f (x : int) = zero?(x) in (f 0)`
-
-```
-> (run "letrec int f (x : int) = zero?(x) in (f 0)")
-(bool-val #t)
-```
-
-執行時沒有 type error。
-
-1. `check` 會接受還是拒絕？
-2. 如果拒絕，是第 18 張的哪一個前提不成立？
-3. 被點名的會是哪一個子運算式？
-
-**停下來想**（3 分鐘）。
+<!-- 講者備註：兩個程式都在 chapter7/checked 跑過。第一列的 ... 是 if zero?(x) then 0 else -((double -(x,1)), -2)。check 的實際訊息：
+第一列：check-equal-type!: Types didn't match: bool != int in #(struct:call-exp #(struct:var-exp double) #(struct:diff-exp #(struct:var-exp x) #(struct:const-exp 1)))
+第二列：check-equal-type!: Types didn't match: bool != int in #(struct:zero?-exp #(struct:var-exp x))
+都省略了結尾的 [,bt for context]。哪一行報錯，第 3 堂第 34 張再講。 -->
 
 ---
 
-# 對答案：第一個前提不成立
+<!-- _class: small -->
+
+# 為什麼要比較兩個型別？以 diff 規則為例（p.239）
 
 ```
-> (check "letrec int f (x : int) = zero?(x) in (f 0)")
-; check-equal-type!: Types didn't match: bool != int in
-; #(struct:zero?-exp #(struct:var-exp x))
+(type-of exp1 tenv) = int    (type-of exp2 tenv) = int
+------------------------------------------------------
+      (type-of (diff-exp exp1 exp2) tenv) = int
 ```
 
-| 前提 | 推出 | 要求 | 成立？ |
-|---|---|---|---|
-| 第一個 | `zero?(x) : bool` | 等於宣告的 tres `int` | 否 |
-| 第二個 | `(f 0) : int` | 有型別 | 是 |
+把這條規則寫成程式，處理 `-(zero?(0),1)`：
 
-被點名的是 eproc-body `zero?(x)`。第 22 張被點名的是 body 裡的遞迴呼叫；這張的 body 沒有遞迴呼叫，推導走完，停在比對 tres 那一步。
+| 步驟 | 程式做的事 | 結果 |
+|---|---|---|
+| 1 | 算 exp1 `zero?(0)` 的型別 | `bool` |
+| 2 | 算 exp2 `1` 的型別 | `int` |
+| 3 | 前提要求兩個型別都 `= int`：拿 `bool` 和 `int` 比、`int` 和 `int` 比 | `bool` ≠ `int`，拒絕 |
+
+問題在第 3 步。規則的結論 `int` 是有前提的：exp1 與 exp2 的型別都是 `int`。要確定前提成立，就要做「型別的比較」。跳過這一步，checker 會接受 `-(zero?(0),1)`，這個程式執行時會在 `expval->num` 出錯（class-13 第 3 張）。
+
+p.242 用 `check-equal-type!` 做這個比較；不相等時要怪罪的運算式，這裡就是 `zero?(0)`（下一張）。
 
 ---
 
@@ -542,9 +505,8 @@ check-equal-type! : Type × Type × Exp → Unspecified
 
 | 程式 | 被怪罪的運算式 |
 |---|---|
-| `(proc (x : bool) -(x,1) 5)`（第 11 張） | `x` |
-| `letrec bool double ...`（第 22 張） | `(double -(x,1))` |
-| `letrec int f (x : int) = zero?(x) ...`（第 24 張） | `zero?(x)` |
+| `(proc (x : bool) -(x,1) 5)`（第 13 張） | `x` |
+| `-(zero?(0),1)`（第 22 張） | `zero?(0)` |
 
 <!-- 講者備註：repo 的 checker.scm 第 10–13 行用 when 取代 if，行為相同。 -->
 
@@ -573,7 +535,6 @@ check-equal-type! : Type × Type × Exp → Unspecified
 ```
 
 - p.243（改寫）：`type-to-external-form` 把型別轉回容易閱讀的 list。為什麼要在意：`check` 回傳的 `'(int -> int)`，就是它的輸出；沒有它，看到的會是 `#(struct:proc-type ...)`
-- p.243（改寫）：`check-equal-type!` 的值從來不被使用，呼叫它只為了 effect，就像 §4.2.2 的 `setref`（p.109：`setref` 回傳 23，這個值不被使用）
 
 <!-- 講者備註：repo 的 type-to-external-form 在 lang.scm 第 86 行起，report-unequal-types 在 checker.scm 第 17–23 行。 -->
 
@@ -581,15 +542,32 @@ check-equal-type! : Type × Type × Exp → Unspecified
 
 <!-- _class: small -->
 
+# `check-equal-type!` 為什麼說是 for effect？（p.243）
+
+p.243（改寫）：`check-equal-type!` 的值從來不被使用；呼叫它只為了 effect，就像 §4.2.2 的 `setref`。
+
+看第 23 張的定義：簽名是 `Type × Type × Exp → Unspecified`，本體是一個沒有 else 的 `if`。
+
+| 情況 | 發生什麼 | 回傳值 |
+|---|---|---|
+| `ty1`、`ty2` 相等 | `if` 的條件不成立，又沒有 else，什麼都不做 | Unspecified：沒有意義的值 |
+| 不相等 | `report-unequal-types` 呼叫 `eopl:error`（p.243），整個檢查停下來 | 不會回傳 |
+
+我的解讀：和 `setref` 一樣，回傳值沒有人用；不同的是 effect 的種類，`setref` 改變 store（p.109），`check-equal-type!` 中止檢查。
+
+---
+
+<!-- _class: small -->
+
 # 第 2 堂回顧
 
-1. **letrec 的形狀**：`letrec tres p (var : tvar) = eproc-body in eletrec-body`，p 的型別是 `tvar → tres`（pp.241–242，第 14 張）
-2. **為什麼要寫 tres**：推 eproc-body 時就要用到 p 的型別。這是我的解讀，課本只寫了要求（第 15、16 張）
-3. **兩個 tenv**：eletrec-body 看得到 p；eproc-body 看得到 var 與 p（p.242，第 17 張）
-4. **letrec 規則**：第一個前提檢查 body 的型別等於宣告的 tres；第二個前提給出這個 letrec 運算式的型別（p.242，第 18 張）
-5. **和 `extend-env-rec` 對照**：檢查時的 tenv 與執行時的 environment，放進變數的順序相同。這是我的解讀（p.83、p.242，第 19 張）
-6. **tres 宣告錯時**：被點名的可能是遞迴呼叫，也可能是 body 本身（第 22–24 張）
-7. **`check-equal-type!`**：第三個引數是要怪罪的運算式；呼叫它只為了 effect（pp.242–243，第 25、26 張）
+1. **letrec 的形狀**：`letrec tres p (var : tvar) = eproc-body in eletrec-body`，p 的型別是 `tvar → tres`（pp.241–242，第 16 張）
+2. **兩個 tenv**：eletrec-body 看得到 p；eproc-body 看得到 var 與 p（p.242，第 17 張）
+3. **letrec 規則**：第一個前提檢查 body 的型別等於宣告的 tres；第二個前提給出這個 letrec 運算式的型別（p.242，第 18 張）
+4. **和 `extend-env-rec` 對照**：檢查時的 tenv 與執行時的 environment，放進變數的順序相同。這是我的解讀（p.83、p.242，第 19 張）
+5. **tres 宣告錯時**：被點名的可能是遞迴呼叫，也可能是 body 本身（第 21 張）
+6. **為什麼要比較型別**：規則的結論有前提；要確定前提成立，就要比較算出來的型別和規則要求的型別（p.239，第 22 張）
+7. **`check-equal-type!`**：第三個引數是要怪罪的運算式；呼叫它只為了 effect，不相等時中止檢查（pp.242–243，第 23–25 張）
 
 ---
 
@@ -621,20 +599,15 @@ p.243（改寫）：把規則轉寫成程式，就像第 3 章寫直譯器一樣
     (bool-type)))
 ```
 
-規則的每個前提，變成一行 `check-equal-type!`；結論的型別，變成回傳值。
+我的解讀：規則的每個前提，變成一行 `check-equal-type!`；結論的型別，變成回傳值。程式碼右邊的 `hypothesis`、`conclusion` 註解是我加的。
 
-`type-of-program` 從 `(init-tenv)` 開始（p.244）。repo 的 `init-tenv` 讓 `x`、`v`、`i` 都是 `int`（checker.scm 第 138–143 行），和 `init-env` 的 10、5、1 對得上：
-
-```
-> (check "-(x,v)")
-'int
-> (run "-(x,v)")
-(num-val 5)
-```
+`type-of-program` 從 `(init-tenv)` 開始（p.244）。repo 的 `init-tenv` 讓 `x`、`v`、`i` 都是 `int`（checker.scm 第 138–143 行），和 `init-env` 的 10、5、1 對得上：`(check "-(x,v)")` 得 `'int`，`(run "-(x,v)")` 得 `(num-val 5)`。
 
 <!-- 講者備註：為什麼要在意 init-tenv（我的解讀）：tenv 要預測執行時每個變數的值的型別；init-tenv 若寫 x : bool，而 init-env 的 x 是 10，checker 的預測就不成立。 -->
 
 ---
+
+<!-- _class: small -->
 
 # if 的規則變成哪兩個 `check-equal-type!`？（Figure 7.1，p.244）
 
@@ -647,6 +620,8 @@ p.243（改寫）：把規則轉寫成程式，就像第 3 章寫直譯器一樣
     (check-equal-type! ty2 ty3 exp)
     ty2))
 ```
+
+對照表與下方例子是我整理、我加的。
 
 | 前提 | 程式 | 怪罪 |
 |---|---|---|
@@ -678,13 +653,15 @@ p.243（改寫）：把規則轉寫成程式，就像第 3 章寫直譯器一樣
     (proc-type var-type result-type)))
 ```
 
+對照表是我整理的。
+
 | 規則裡的 | 程式裡的 |
 |---|---|
 | `[var=t1]tenv`（let） | `(extend-tenv var exp1-type tenv)`，t1 由 `exp1` 算出 |
 | `[var=tvar]tenv`（proc） | `(extend-tenv var var-type tenv)`，tvar 來自語法樹 |
 | `(tvar → tres)` | `(proc-type var-type result-type)` |
 
-p.240 說 t1 在程式裡找不到；CHECKED 的 proc 分支，直接拿語法樹裡的 `var-type`。
+我的解讀：p.240 說 t1 在程式裡找不到；CHECKED 的 proc 分支，直接拿語法樹裡的 `var-type`。
 
 ---
 
@@ -705,6 +682,8 @@ p.240 說 t1 在程式裡找不到；CHECKED 的 proc 分支，直接拿語法�
         (report-rator-not-a-proc-type rator-type rator)))))
 ```
 
+對照表與下方例子是我整理、我加的。
+
 | 規則的要求 | 不成立時 |
 |---|---|
 | rator 的型別是 `(t1 → t2)` 的形狀 | `report-rator-not-a-proc-type` |
@@ -712,14 +691,9 @@ p.240 說 t1 在程式裡找不到；CHECKED 的 proc 分支，直接拿語法�
 
 ```
 > (check "(3 4)")
-; type-of-expression: Rator not a proc type:
-; #(struct:const-exp 3)
-; had rator type int
+; type-of-expression: Rator not a proc type: #(struct:const-exp 3) had rator type int
 > (check "(proc (x : int) x zero?(0))")
-; check-equal-type!: Types didn't match: int != bool in
-; #(struct:zero?-exp #(struct:const-exp 0))
-> (run "(proc (x : int) x zero?(0))")
-(bool-val #t)
+; check-equal-type!: Types didn't match: int != bool in #(struct:zero?-exp #(struct:const-exp 0))
 ```
 
 ---
@@ -746,13 +720,13 @@ checker.scm 第 95–107 行：
 107        (type-of letrec-body tenv-for-letrec-body))))
 ```
 
-`tenv-for-letrec-body` 就是第 17 張的 tenv_letrec-body；第 103–104 行建出的，就是 tenv_proc-body。
+我的解讀：`tenv-for-letrec-body` 就是第 17 張的 tenv_letrec-body；第 103–104 行建出的，就是 tenv_proc-body。
 
 ---
 
 <!-- _class: small -->
 
-# 停下來想：letrec 規則的每一部分在第幾行？
+# letrec 規則的每一部分，在 checker.scm 第幾行？
 
 ```
 (type-of eproc-body [var=tvar][p=(tvar → tres)]tenv) = tres
@@ -761,24 +735,7 @@ checker.scm 第 95–107 行：
 (type-of letrec tres p (var : tvar) = eproc-body in eletrec-body tenv) = t
 ```
 
-對照第 33 張，填出行號：
-
-| 規則裡的 | checker.scm 第幾行 |
-|---|---|
-| `[p=(tvar → tres)]tenv` | ？ |
-| `[var=tvar][p=(tvar → tres)]tenv` | ？ |
-| 第一個前提的 `type-of eproc-body ...` | ？ |
-| 第一個前提的 `= tres` | ？ |
-| 第二個前提 | ？ |
-| 結論的 t | ？ |
-
-**停下來想**（4 分鐘）。
-
----
-
-<!-- _class: small -->
-
-# 對答案：letrec 規則與程式的行號
+對照第 32 張的程式。對照表是我整理的。
 
 | 規則裡的 | checker.scm 第幾行 | 程式 |
 |---|---|---|
@@ -788,6 +745,19 @@ checker.scm 第 95–107 行：
 | 第一個前提的 `= tres` | 105–106 | `(check-equal-type! p-body-type p-result-type p-body)` |
 | 第二個前提 | 107 | `(type-of letrec-body tenv-for-letrec-body)` |
 | 結論的 t | 107 | 同一行的回傳值 |
+
+---
+
+<!-- _class: small -->
+
+# 第 21 張的兩個例子，各是哪一行 `check-equal-type!` 報錯？
+
+| 例子 | 報錯的那一行 | 第三個引數（被怪罪的） |
+|---|---|---|
+| `letrec bool double ...` | diff-exp 分支，checker.scm 第 50 行 | `exp1`：`(double -(x,1))` |
+| `letrec int f ... = zero?(x)` | letrec 分支，第 105–106 行 | `p-body`：`zero?(x)` |
+
+letrec 分支先推 body（第 101–104 行），再比對（第 105–106 行），所以 (a) 的矛盾先被抓到。第一例走不到第 105 行；如果走得到，那裡也會不相等（body 是 `int`，宣告是 `bool`）。
 
 ---
 
@@ -814,184 +784,25 @@ checker.scm 第 95–107 行：
 
 ---
 
-# 停下來想：Exercise 7.7 [★]（p.243）
-
-p.243（改寫）：修改檢查 if-exp 的程式，讓測試式不是 boolean 時，不檢查另外兩個運算式。舉一個運算式，新版的 checker 和舊版行為不同。
-
-```scheme
-(if-exp (exp1 exp2 exp3)
-  (let ((ty1 (type-of exp1 tenv))
-        (ty2 (type-of exp2 tenv))
-        (ty3 (type-of exp3 tenv)))
-    (check-equal-type! ty1 (bool-type) exp1)
-    (check-equal-type! ty2 ty3 exp)
-    ty2))
-```
-
-**停下來想**（5 分鐘）：
-
-1. 改哪幾行？
-2. 什麼樣的運算式會讓兩版行為不同？有沒有一個程式，一版接受、另一版拒絕？
-
----
-
 <!-- _class: small -->
 
-# 對答案：Exercise 7.7（我的解答）
+# HW6：五題課本習題
 
-```scheme
-(if-exp (exp1 exp2 exp3)
-  (let ((ty1 (type-of exp1 tenv)))
-    (check-equal-type! ty1 (bool-type) exp1)
-    (let ((ty2 (type-of exp2 tenv))
-          (ty3 (type-of exp3 tenv)))
-      (check-equal-type! ty2 ty3 exp)
-      ty2)))
-```
-
-| 運算式 | 舊版 `check` | 新版 `check` |
-|---|---|---|
-| `if 1 then y else 2` | `apply-tenv: Unbound variable y` | 怪罪 `1`：`int != bool` |
-| `if 1 then -(zero?(0),1) else 2` | 怪罪 `zero?(0)`：`bool != int` | 怪罪 `1`：`int != bool` |
-| `if zero?(0) then 1 else zero?(1)` | 怪罪 if 運算式本身 | 怪罪 if 運算式本身 |
-
-我的解讀：兩版接受的程式相同。測試式是 bool 時，兩版都檢查三個子運算式；不是 bool 時，兩版都拒絕。行為不同的地方，在先報哪一個錯。
-
-<!-- 講者備註：這份解答是我的，課本沒有附答案。表格是把 checker.scm 複製一份、照上面改完後實際跑的結果。 -->
-
----
-
-<!-- _class: small -->
-
-# 習題 7.5–7.11 各要擴充什麼？（pp.243–248）
-
-| 題號 | 難度 | 頁碼 | 內容 | 用到 |
+| 題號 | 難度 | 頁碼 | 節 | 內容 |
 |---|---|---|---|---|
-| 7.5 | ★★ | p.243 | 多個 let 宣告、多參數 procedure、多個 letrec 宣告；新增型別 `(t1 * t2 * ... * tn -> t)` | — |
-| 7.6 | ★ | p.243 | 處理 assignment | §4.3 |
-| 7.7 | ★ | p.243 | if 的測試式不是 boolean 時，不檢查其他運算式 | 第 37、38 張 |
-| 7.8 | ★★ | pp.243、246 | 加入 `pairof` 型別、`newpair`、`unpair`，規則在 p.246 | Exercise 3.18 的 unpair |
-| 7.9 | ★★ | p.247 | 加入 `listof` 型別、`list`、`cons`、`null?`、`emptylist`；自己寫 `car`、`cdr` 的規則 | Exercise 3.9 |
-| 7.10 | ★★ | p.248 | 處理 EXPLICIT-REFS：`refto t`、`void`；寫出 `newref`、`deref`、`setref` 的規則 | §4.2 |
-| 7.11 | ★★ | p.248 | 處理 MUTABLE-PAIRS | §4.4 |
+| 7.1 | ★ | pp.237–238 | §7.1 | 每個值有哪些型別？只做第 2、4、5、8、11、12、13 小題（其他小題 class-13 做過） |
+| 7.2 | ★★ | p.238 | §7.1 | 依 Definition 7.1.1，有沒有恰好兩個型別的值？ |
+| 7.3 | ★★ | p.238 | §7.1 | 對 LETREC，「值 val 屬於型別 t」是否可判定？ |
+| 7.6 | ★ | p.243 | §7.3 | 擴充 checker，處理 assignment（§4.3） |
+| 7.8 | ★★ | pp.243、246 | §7.3 | 加入 `pairof` 型別、`newpair`、`unpair` |
 
----
+**繳交期限：week 16 上課前，上傳 Moodle。** 硬性要求同 HW3（contract、先寫規格、自己補測試）。
 
-# Exercise 7.9 的兩個問題（p.247）
+- 7.1–7.3：每題寫出理由，依據 Definition 7.1.1（p.237）
+- 7.6：先用 p.239 的寫法，寫出 `set` 的型別規則，再改 checker；`check` 接受、拒絕的測試各至少一個
+- 7.8：以 repo 的 `chapter7/checked` 為底，checker 與直譯器都要改；`type-to-external-form` 對 pair 型別產生 `(pairof t1 t2)`（p.246）；每條新規則至少一個 `check` 接受、一個拒絕的測試，接受的那個也要 `run`
 
-p.247（改寫）：`car`、`cdr` 的規則要保證它們作用在 list 上，但不要保證 list 非空。
-
-```
-(type-of emptylist[t] tenv) = listof t
-```
-
-課本的兩個問題：
-
-1. 為什麼要求規則保證 list 非空，是不合理的？
-2. `emptylist` 為什麼需要型別參數？
-
-這兩題是 HW6 的第 2 題。想第 1 題時，可以回去看 class-13 第 7 張：p.234 把哪些失敗排除在 safety 之外？
-
----
-
-<!-- _class: small -->
-
-# Exercise 7.10 的 `void` 在保護什麼？（p.248）
-
-p.248（改寫）：`void` 是 `setref` 回傳值的型別。對 `void` 的值不能做任何運算，所以 `setref` 回傳什麼都沒有關係。課本說，這是型別當作資訊隱藏 (information-hiding) 機制的一個例子。
-
-在 chapter4/explicit-refs 跑：
-
-```
-> (run "let r = newref(1) in -(setref(r,2), 1)")
-(num-val 22)
-```
-
-p.109：`setref` 回傳 23，這是任意的選擇。
-
-| | `-(setref(r,2), 1)` |
-|---|---|
-| EXPLICIT-REFS（沒有型別） | 得到 22，程式用到了 23 這個任意的值 |
-| 加上 Exercise 7.10 的型別（我的解讀） | `setref(r,2) : void`，diff 規則要求 `int`，拒絕 |
-
-為什麼要在意（我的解讀）：程式拿不到 23，實作就可以改回傳別的值，不影響任何被接受的程式。
-
----
-
-<!-- _class: small -->
-
-# HW6：兩題課本習題與一題自訂題
-
-| 題號 | 難度 | 頁碼 | 內容 |
-|---|---|---|---|
-| 7.8 | ★★ | pp.243、246 | 實作 `pairof`、`newpair`、`unpair`：checker 與直譯器都要改 |
-| 7.9 的兩個問題 | ★★ | p.247 | 只回答第 40 張的兩個問題，不用實作 |
-| 自訂題 | — | — | 找出一份 checker 不健全的地方（下一張） |
-
-**繳交期限：week 16 上課前，上傳 Moodle。**
-
-硬性要求同 HW3（contract、先寫規格、自己補測試）。
-
-- 7.8：以 repo 的 `chapter7/checked` 為底；`type-to-external-form` 對 pair 型別產生 `(pairof t1 t2)`（p.246）；每條新規則至少一個 `check` 接受、一個 `check` 拒絕的測試，接受的那個也要 `run`
-- 7.9：每題用一個 CHECKED 程式說明
-
----
-
-<!-- _class: small -->
-
-# HW6 自訂題：`check` 接受、`run` 卻發生 type error
-
-Moodle 上的 `hw6-checker.scm` 是 chapter7/checked 的 `checker.scm` 改了一處，letrec 分支以外的程式沒有改。用它替換 `checker.scm`。
-
-1. 找出改了哪裡；用 p.242 的記號，寫出這份 checker 實際用的 letrec 規則
-2. 寫一個 CHECKED 程式：這份 checker 的 `check` 接受，`run` 發生 type error。附上兩個輸出
-3. 修正 checker；說明修正後，這個程式違反規則的哪一個前提
-4. 用 `(check-all)` 跑 repo 的 tests.scm，結果是什麼？為什麼這些測試沒有抓到？
-
-| 小題 | 繳交 |
-|---|---|
-| 1 | 規則（文字） |
-| 2 | 程式、`check` 與 `run` 的輸出 |
-| 3 | 修正後的 checker.scm、說明 |
-| 4 | `check-all` 的輸出、說明 |
-
-拿 repo 的原版做 diff，就找得到第 1 小題的答案；評分看第 2–4 小題。
-
-<!-- 講者備註：hw6-checker.scm 刪掉了第 105–106 行的 (check-equal-type! p-body-type p-result-type p-body)，也就是不比對 tres。我實測：repo 的 (check-all) 與 (run-all) 都印 no bugs found。參考反例：letrec int f (x : int) = zero?(x) in -((f 0),1)，這份 checker 回傳 int，run 報 Looking for a num, found #(struct:bool-val #t)；原版 checker 怪罪 zero?(x)（第 24 張）。第 4 小題連到 class-08：測試只檢查被執行到的分支，tests.scm 也只放了作者想到的程式。 -->
-
----
-
-<!-- _class: small -->
-
-# 課外補充：Clojure 的 `^String` 算不算標註？
-
-```clojure
-;; hint.clj
-(set! *warn-on-reflection* true)
-(defn len1 [s] (.length s))
-(defn len2 [^String s] (.length s))
-(println (len1 "abc") (len2 "abc"))
-(println (len2 42))
-```
-
-```
-$ java -cp clojure-1.12.0.jar:... clojure.main hint.clj
-Reflection warning, /tmp/clj/hint.clj:2:16 - reference to field length can't be resolved.
-3 3
-Execution error (ClassCastException) at user/len2 (hint.clj:3).
-class java.lang.Long cannot be cast to class java.lang.String ...
-
-$ clj-kondo --lint hint2.clj     ; (defn g [] (len2 42))
-hint2.clj:3:18: error: Expected: string or nil, received: positive integer.
-```
-
-| 誰讀 `^String` | 做什麼 | 對照 CHECKED |
-|---|---|---|
-| Clojure compiler | 編譯 `.length` 時不用 reflection | — |
-| 執行時 | 傳入 42，丟 ClassCastException | `run` 不看標註（第 11 張） |
-| clj-kondo | 不執行，看到 42 不是 string 就報錯 | `check` |
-
-<!-- 講者備註：hint2.clj 的內容是 (ns hint2) (defn len2 [^String s] (.length s)) (defn g [] (len2 42))。java 的 classpath 省略了 spec.alpha-0.5.238.jar 與 core.specs.alpha-0.4.74.jar；ClassCastException 的訊息只節錄前半。clj-kondo 說 "string or nil"：type hint 允許 nil，CHECKED 的型別沒有 nil 這種值。三種讀法的分類是我的解讀。 -->
+<!-- 講者備註：§7.2 只有 Exercise 7.4 一題，課堂上已決定不用；§7.2 的能力（用 p.239 的寫法寫型別規則）由 7.6、7.8 練習。7.6 照課本只要求擴充 checker；CHECKED 的直譯器沒有 store，所以不要求 run。 -->
 
 ---
 
@@ -999,13 +810,12 @@ hint2.clj:3:18: error: Expected: string or nil, received: positive integer.
 
 # 本日結論
 
-1. **CHECKED 的標註**：proc 規則的 t1 在程式裡找不到，CHECKED 讓程式設計師寫出每個綁定變數的型別；letrec 另外寫結果型別；`run` 不看標註（pp.240–241，第 3–11 張）
-2. **letrec 規則**：eletrec-body 看得到 p；eproc-body 看得到 var 與 p；body 的型別要等於宣告的 tres（p.242，第 14–24 張）
-3. **`check-equal-type!`**：比較型別，不相等時怪罪第三個引數；呼叫它只為了 effect（pp.242–243，第 25、26 張）
-4. **規則轉寫成程式**：每個前提一行 `check-equal-type!`，結論是回傳值；tenv 的擴充對應 `extend-tenv`（pp.243–246，第 29–35 張）
-5. **`type-of` 與 `value-of` 同結構**：差在 if 走幾個分支、proc 的 body 何時被處理；程式不終止，檢查仍會結束。這是我的解讀（第 36 張）
-6. **Exercise 7.7**：測試式不是 bool 時跳過分支，改變的是先報哪個錯。這是我的解讀（第 37、38 張）
-7. **HW6**：Exercise 7.8、7.9 的兩個問題，與一份不健全的 checker（第 42、43 張）
+1. **CHECKED 的標註**：proc 規則的 t1 在程式裡找不到，CHECKED 讓程式設計師寫出每個綁定變數的型別；letrec 另外寫結果型別，因為 body 會遞迴呼叫自己（我的解讀）；`run` 不看標註（pp.240–241，第 3–13 張）
+2. **letrec 規則**：eletrec-body 看得到 p；eproc-body 看得到 var 與 p；body 的型別要等於宣告的 tres（p.242，第 16–21 張）
+3. **`check-equal-type!`**：確認規則的前提成立，要比較算出來的型別和規則要求的型別；不相等時怪罪第三個引數；呼叫它只為了 effect（pp.239、242–243，第 22–25 張）
+4. **規則轉寫成程式**：每個前提一行 `check-equal-type!`，結論是回傳值；tenv 的擴充對應 `extend-tenv`（pp.243–246，第 28–34 張）
+5. **`type-of` 與 `value-of` 同結構**：差在 if 走幾個分支、proc 的 body 何時被處理；程式不終止，檢查仍會結束。這是我的解讀（第 35 張）
+6. **HW6**：Exercise 7.1、7.2、7.3、7.6、7.8（第 36 張）
 
 ---
 
