@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 520" font-family="Noto Sans CJK TC, sans-serif">
+<rect x="5" y="5" width="455" height="510" rx="10" fill="#fff4e5" stroke="#e08a00"/>
+<text x="232" y="38" font-size="22" text-anchor="middle" font-weight="bold">SQL：形狀先定死的格子</text>
+<text x="30" y="85" font-size="20" font-weight="bold">orders</text>
+<rect x="30" y="95" width="90" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="75.0" y="116" font-size="16" text-anchor="middle" font-weight="bold">id</text>
+<rect x="30" y="125" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="75.0" y="146" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">42</text>
+<rect x="30" y="155" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="75.0" y="176" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">43</text>
+<text x="30" y="240" font-size="20" font-weight="bold">items</text>
+<rect x="30" y="250" width="95" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="77.5" y="271" font-size="16" text-anchor="middle" font-weight="bold">order_id</text>
+<rect x="125" y="250" width="85" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="167.5" y="271" font-size="16" text-anchor="middle" font-weight="bold">sku</text>
+<rect x="210" y="250" width="70" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="245.0" y="271" font-size="16" text-anchor="middle" font-weight="bold">qty</text>
+<rect x="280" y="250" width="150" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="355.0" y="271" font-size="16" text-anchor="middle" font-weight="bold">gift_wrap</text>
+<rect x="30" y="280" width="95" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="77.5" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">42</text>
+<rect x="125" y="280" width="85" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="167.5" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">"A-1"</text>
+<rect x="210" y="280" width="70" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="245.0" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">2</text>
+<rect x="280" y="280" width="150" height="30" fill="#fde8e8" stroke="#7a8ca3"/>
+<text x="355.0" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#c0392b" font-weight="bold">NULL</text>
+<rect x="30" y="310" width="95" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="77.5" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">42</text>
+<rect x="125" y="310" width="85" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="167.5" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">"B-7"</text>
+<rect x="210" y="310" width="70" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="245.0" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">1</text>
+<rect x="280" y="310" width="150" height="30" fill="#fde8e8" stroke="#7a8ca3"/>
+<text x="355.0" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#c0392b" font-weight="bold">NULL</text>
+<rect x="30" y="340" width="95" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="77.5" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">43</text>
+<rect x="125" y="340" width="85" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="167.5" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">"A-1"</text>
+<rect x="210" y="340" width="70" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="245.0" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">5</text>
+<rect x="280" y="340" width="150" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="355.0" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">true</text>
+<text x="30" y="420" font-size="16">• 每一列都有同樣的欄位</text>
+<text x="30" y="447" font-size="16" fill="#c0392b">• 沒有這個值，也要佔一格：NULL</text>
+<text x="30" y="474" font-size="16">• 巢狀拆成兩張 table，用 order_id 接起來</text>
+<rect x="480" y="5" width="635" height="510" rx="10" fill="#e8f6ec" stroke="#2e8b57"/>
+<text x="797" y="38" font-size="22" text-anchor="middle" font-weight="bold">Datomic：一張很長的 [e a v] 表</text>
+<text x="505" y="60" font-size="20" font-weight="bold"></text>
+<rect x="505" y="70" width="80" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="545.0" y="91" font-size="16" text-anchor="middle" font-weight="bold">e</text>
+<rect x="585" y="70" width="190" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="680.0" y="91" font-size="16" text-anchor="middle" font-weight="bold">a</text>
+<rect x="775" y="70" width="90" height="30" fill="#dfe9f5" stroke="#7a8ca3"/>
+<text x="820.0" y="91" font-size="16" text-anchor="middle" font-weight="bold">v</text>
+<rect x="505" y="100" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="121" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">101</text>
+<rect x="585" y="100" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="121" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:order/id</text>
+<rect x="775" y="100" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="121" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">42</text>
+<rect x="505" y="130" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="151" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">101</text>
+<rect x="585" y="130" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="151" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:order/items</text>
+<rect x="775" y="130" width="90" height="30" fill="#eaf2fb" stroke="#7a8ca3"/>
+<text x="820.0" y="151" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#1f5fa8" font-weight="bold">201</text>
+<rect x="505" y="160" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="181" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">101</text>
+<rect x="585" y="160" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="181" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:order/items</text>
+<rect x="775" y="160" width="90" height="30" fill="#eaf2fb" stroke="#7a8ca3"/>
+<text x="820.0" y="181" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#1f5fa8" font-weight="bold">202</text>
+<rect x="505" y="190" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="211" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">201</text>
+<rect x="585" y="190" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="211" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:item/sku</text>
+<rect x="775" y="190" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="211" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">"A-1"</text>
+<rect x="505" y="220" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="241" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">201</text>
+<rect x="585" y="220" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="241" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:item/qty</text>
+<rect x="775" y="220" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="241" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">2</text>
+<rect x="505" y="250" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="271" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">202</text>
+<rect x="585" y="250" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="271" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:item/sku</text>
+<rect x="775" y="250" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="271" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">"B-7"</text>
+<rect x="505" y="280" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">202</text>
+<rect x="585" y="280" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:item/qty</text>
+<rect x="775" y="280" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="301" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">1</text>
+<rect x="505" y="310" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">102</text>
+<rect x="585" y="310" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:order/id</text>
+<rect x="775" y="310" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="331" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">43</text>
+<rect x="505" y="340" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">102</text>
+<rect x="585" y="340" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:order/items</text>
+<rect x="775" y="340" width="90" height="30" fill="#eaf2fb" stroke="#7a8ca3"/>
+<text x="820.0" y="361" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#1f5fa8" font-weight="bold">203</text>
+<rect x="505" y="370" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="391" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">203</text>
+<rect x="585" y="370" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="391" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:item/sku</text>
+<rect x="775" y="370" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="391" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">"A-1"</text>
+<rect x="505" y="400" width="80" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="545.0" y="421" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">203</text>
+<rect x="585" y="400" width="190" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="680.0" y="421" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">:item/qty</text>
+<rect x="775" y="400" width="90" height="30" fill="#fff" stroke="#7a8ca3"/>
+<text x="820.0" y="421" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#222" font-weight="normal">5</text>
+<rect x="505" y="430" width="80" height="30" fill="#e8f6ec" stroke="#7a8ca3"/>
+<text x="545.0" y="451" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#2e8b57" font-weight="bold">203</text>
+<rect x="585" y="430" width="190" height="30" fill="#e8f6ec" stroke="#7a8ca3"/>
+<text x="680.0" y="451" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#2e8b57" font-weight="bold">:item/gift-wrap</text>
+<rect x="775" y="430" width="90" height="30" fill="#e8f6ec" stroke="#7a8ca3"/>
+<text x="820.0" y="451" font-size="15" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" fill="#2e8b57" font-weight="bold">true</text>
+<text x="885" y="120" font-size="16" fill="#1f5fa8">藍色的 v 是另一個 e：</text>
+<text x="885" y="143" font-size="16" fill="#1f5fa8">巢狀就是 ref</text>
+<text x="885" y="440" font-size="16" fill="#2e8b57">有 gift-wrap 才多一列；</text>
+<text x="885" y="463" font-size="16" fill="#2e8b57">沒有就不寫，</text>
+<text x="885" y="486" font-size="16" fill="#2e8b57">不需要 NULL</text>
+</svg>

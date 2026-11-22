@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 350" font-family="Noto Sans CJK TC, sans-serif">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#555"/></marker>
+  </defs>
+  <!-- columns -->
+  <rect x="20" y="10" width="330" height="330" rx="8" fill="#e8f6ec" stroke="#2e8b57"/>
+  <text x="185" y="42" font-size="22" text-anchor="middle" font-weight="bold">執行前</text>
+  <rect x="385" y="10" width="330" height="330" rx="8" fill="#fff4e5" stroke="#e08a00"/>
+  <text x="550" y="42" font-size="22" text-anchor="middle" font-weight="bold">執行時，用到那一刻</text>
+  <rect x="750" y="10" width="330" height="330" rx="8" fill="#fde8e8" stroke="#c0392b"/>
+  <text x="915" y="42" font-size="22" text-anchor="middle" font-weight="bold">沒有人檢查</text>
+  <!-- boxes -->
+  <g font-size="18" text-anchor="middle">
+    <rect x="50" y="65" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="185" y="95">scan&amp;parse</text><text x="185" y="120">形狀不符 grammar</text>
+    <rect x="50" y="155" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="185" y="185">lexaddr 的 translator</text><text x="185" y="210">找不到 declaration</text>
+    <rect x="50" y="245" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="185" y="275">CHECKED 的 type-of</text><text x="185" y="300">值的種類不對</text>
+
+    <rect x="415" y="155" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="550" y="185">spec 的 instrument</text><text x="550" y="210">引數不符合 spec</text>
+    <rect x="415" y="245" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="550" y="275">LETREC 的 extractor</text><text x="550" y="300">值的種類不對</text>
+
+    <rect x="780" y="155" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="915" y="185">對到錯的 declaration</text><text x="915" y="210">照常算出一個值</text>
+    <rect x="780" y="245" width="270" height="70" rx="6" fill="#fff" stroke="#4a90d9"/>
+    <text x="915" y="275">json 欄位的 path 寫錯</text><text x="915" y="300">回 NULL</text>
+  </g>
+  <!-- Ch7 arrow: extractor -> type-of -->
+  <line x1="415" y1="280" x2="325" y2="280" stroke="#2e8b57" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#ah)"/>
+  <text x="370" y="240" font-size="15" fill="#2e8b57" text-anchor="middle">Ch7</text>
+  <text x="370" y="258" font-size="15" fill="#2e8b57" text-anchor="middle">提前</text>
+</svg>
