@@ -54,15 +54,15 @@ style: |
 | 時段 | 內容 |
 |---|---|
 | 第 1 堂 | 期末複習 Ch1–Ch3；SICP 的 eval/apply 與 EOPL 的 value-of/apply-X |
-| 第 2 堂 | 期末複習 Ch4、§7.1–7.3 |
+| 第 2 堂 | 期末複習 Ch4（含 Lisp macro 補充）、§7.1–7.3 |
 | 第 3 堂 | 兩句話的對立：Milner 與 Greenspun；SQL 的 json 與 Datalog；期末考說明 |
 
 <!-- 講者備註：
 第 1 堂：概念 13 個（十台直譯器、defined/defining language、用 Lisp 寫直譯器的好處、四角度表、歸納定義三寫法、Follow the Grammar 與 context argument、表示法獨立與 cases、等式與分支、lexical/dynamic binding、extend-env-rec、eval/apply、value-of 與 apply-X 的分工、procedure 的兩種表示法）、停下來想 1 處（第 11 張）、約 48 分鐘
-第 2 堂：概念 9 個（錯誤的 phase、store 讓共享可觀察、store-passing 與求值順序、Ref 的位置與 newref 四處、四種傳參、value-of-operand、type-of 與 value-of 的差異、sound、check 與 run 的對照）、停下來想 2 處（第 24、29 張）、約 52 分鐘
-第 3 堂：概念 13 個（Milner 的 wrong、不保證的事、Greenspun、三樣東西、保證的邊界、兩句話的交會點、spec、押注與代價、json 欄位、datom 與 ref、Datalog 的 join、為什麼不需要 json 型別（我的解讀）、Clojure 與 Datomic 的回應；另有 3 張圖解：第 38、42、48 張）、停下來想 0 處、約 50 分鐘
-每張的分鐘數是我的假設，沒有實測。
-實測環境：Racket v8.10 + mwand/eopl3；dynamic binding 版是我把 chapter3/proc-lang/ds-rep 複製一份、改 interp.scm 三行；sqlite 3.45.1。Datomic 的程式碼依官方文件的寫法，沒有實測。
+第 2 堂：概念 13 個（錯誤的 phase、store 讓共享可觀察、store-passing 與求值順序、Ref 的位置與 newref 四處、四種傳參、value-of-operand、and 不能寫成 procedure、macro 收到的是語法樹、C macro 與 Lisp macro 和 hygiene、macro 作用的階段、type-of 與 value-of 的差異、sound、check 與 run 的對照；另有 1 張圖解：第 30 張）、停下來想 2 處（第 24、33 張）、約 70 分鐘
+第 3 堂：概念 13 個（Milner 的 wrong、不保證的事、Greenspun、三樣東西、保證的邊界、兩句話的交會點、spec、押注與代價、json 欄位、datom 與 ref、Datalog 的 join、為什麼不需要 json 型別（我的解讀）、Clojure 與 Datomic 的回應；另有 3 張圖解：第 42、46、52 張）、停下來想 0 處、約 50 分鐘
+每張的分鐘數是我的假設，沒有實測。macro 的四張（第 27–30 張）我估約 18 分鐘。
+實測環境：Racket v8.10 + mwand/eopl3；dynamic binding 版是我把 chapter3/proc-lang/ds-rep 複製一份、改 interp.scm 三行；sqlite 3.45.1；macro 的例子用 Racket v8.10 的 #lang eopl 與 gcc。Datomic 的程式碼依官方文件的寫法，沒有實測。
 week 15 三堂都用來複習：class-14 已經講完 §7.3，HW6 也在 class-14 發布。 -->
 
 ---
@@ -409,7 +409,7 @@ class-06 的補充：Reynolds（1972）指出，用 defining language 的 higher
 <!-- _class: lead -->
 
 # 第 2 堂
-## Ch4 與 §7.1–7.3
+## Ch4（含 Lisp macro）與 §7.1–7.3
 
 ---
 
@@ -563,6 +563,111 @@ p.132：配置的決定移到 call-exp，因為那裡還看得到 operand 是不
 
 <!-- _class: small -->
 
+# `and` 能不能寫成 procedure？
+
+```racket
+#lang eopl
+(define my-and (lambda (a b) (if a b #f)))   ; and written as a procedure
+
+> (and #f (car '()))
+#f
+> (my-and #f (car '()))
+car: contract violation  expected: pair?  given: ()
+> (map and '(#t) '(#f))
+and: bad syntax
+```
+
+| | `my-and`（procedure） | `and`（macro） |
+|---|---|---|
+| operand 何時求值 | 呼叫前全部求值，和第 25 張 implicit-refs 那一欄一樣 | 前一個是 `#f`，後面就不求值 |
+| 能不能當成值傳給 `map` | 可以 | 不行：`and: bad syntax` |
+
+第 25 張的 P4 也是同一個問題：operand 不該先求值。call-by-need 在**執行期**把 operand 存成 thunk；macro 在**編譯期**改寫程式，讓 operand 只出現在 `if` 的分支裡（class-12 第 46 張：macro 是編譯期的 call-by-name，我的解讀）。
+
+<!-- 講者備註：課外補充，期末考會考。Racket v8.10，#lang eopl 實測。#lang eopl 有提供 define-syntax 與 syntax-rules（eopl 套件的 eopl.rkt），所以這幾張的程式學生在自己的環境就能跑。and 不是值，所以不能傳給 map；這也是它不是 procedure 的直接證據。 -->
+
+---
+
+<!-- _class: small -->
+
+# 自己寫一個 `my-or`：macro 收到的是什麼？
+
+```racket
+#lang eopl
+(define-syntax my-or
+  (syntax-rules ()
+    ((_ a b) (let ((t a)) (if t t b)))))   ; pattern -> template
+
+> (my-or #f 7)
+7
+> (my-or 1 (car '()))
+1
+```
+
+展開一層的結果：
+
+```racket
+(my-or #f (car '()))   ==>   (let ((t #f)) (if t t (car (quote ()))))
+```
+
+- macro 收到的是 `a`、`b` 兩段**語法樹**，不是兩個值
+- 它輸出一段新的語法樹，取代原來的 `(my-or ...)`；`(car '())` 被放進 `if` 的分支，`t` 是 `#f` 時才求值
+- 為什麼要 `let`？寫成 `(if a a b)` 的話，`a` 會被求值兩次：`a` 有 effect 時，`hi` 會印兩次
+
+<!-- 講者備註：展開結果是在 #lang racket 用 define-syntax-rule 寫同一個 my-or，再用 (syntax->datum (expand-once #'(my-or #f (car '())))) 得到的；#lang eopl 沒有提供 expand-once。印兩次的實測：(bad-or (begin (display "hi ") 1) 2) 印出 hi hi 1，my-or 只印 hi 1。最後一點回扣 Ch4：有 effect 時，求值幾次、什麼順序，都會影響結果（p.138）。 -->
+
+---
+
+<!-- _class: small -->
+
+# C macro 和 Lisp macro 差在哪？
+
+**實驗 1：運算式當作 macro 的參數**
+
+```c
+#define SQUARE(x) x*x
+SQUARE(1+2)          /* gcc -E:  1+2*1+2   ->  5 */
+```
+
+```racket
+(define-syntax square (syntax-rules () ((_ x) (* x x))))
+(square (+ 1 2))     ; => 9
+```
+
+**實驗 2：macro 裡的變數名稱和使用者的變數撞名**
+
+```racket
+(let ((t 5)) (my-or #f t))                  ; => 5
+;; if substituted textually:
+(let ((t 5)) (let ((t #f)) (if t t t)))     ; => #f
+```
+
+| | C | Lisp（Racket） |
+|---|---|---|
+| 作用在 | token | 語法樹 |
+| `1+2` 是一個整體嗎 | 不是，只是三個 token | 是，`(+ 1 2)` 本來就是一棵子樹 |
+| macro 自己的變數 | 會和使用者的變數撞名 | hygiene：macro 引入的 `t` 和使用者的 `t` 是不同的變數 |
+
+<!-- 講者備註：SQUARE 用 gcc 實測，gcc -E 看到 1+2*1+2，執行印出 5。square、my-or 在 #lang eopl 實測。C 的慣用解法是每個參數加括號：#define SQUARE(x) ((x)*(x))，但撞名的問題括號解決不了。 -->
+
+---
+
+<!-- _class: small -->
+
+# macro 在哪一個階段作用？
+
+![w:880](img/macro-pipeline.svg)
+
+- macro 是一支在**展開階段**執行的程式：輸入語法樹，輸出語法樹。它看不到執行期的值，`(my-or x y)` 展開時不知道 `x` 是多少
+- `#lang eopl` 的 `define-datatype`、`cases` 都是用 `define-syntax` 寫的 macro：這學期你一直在用
+- 我的解讀：macro 讓使用者擴充編譯器的前端。下學期的 compiler design，會接著看展開之後的那一段
+
+<!-- 講者備註：圖是我畫的，img/macro-pipeline.svg（手寫 SVG）。define-datatype、cases 的定義在 eopl 套件的 datatype.rkt，都是 (define-syntax ...)（Racket v8.10 安裝的版本）。圖上 Lisp 那條線右邊的「直譯」只標出 value-of 在概念上的位置：Racket 自己展開完之後會編譯，不是交給 value-of；這學期的 LET 到 CHECKED 都沒有 macro。read 那格的 'x 讀成 (quote x) 是 reader 的例子，這門課不展開。 -->
+
+---
+
+<!-- _class: small -->
+
 # `type-of` 和 `value-of` 差在哪幾個分支？
 
 class-14 的並排表：
@@ -613,7 +718,7 @@ class-14 的並排表：
 
 # 對答案
 
-| # | `check` | `run` | 落在第 28 張的哪一區 |
+| # | `check` | `run` | 落在第 32 張的哪一區 |
 |---|---|---|---|
 | 1 | 拒絕：`Rator not a proc type` | `(proc-val ...)`，沒有錯 | 藍色環狀區 |
 | 2 | 拒絕：`int != bool` | `(num-val 1)` | 藍色環狀區 |
@@ -636,8 +741,9 @@ class-14 的並排表：
 2. **store**：有了 assignment，共享才觀察得到；store-passing 規則因此規定了求值順序（pp.103、107）
 3. **Ref 的位置**：EXPLICIT-REFS 放在 ExpVal，IMPLICIT-REFS 放在 DenVal；`newref` 藏進 init env、let、call、letrec 四處（pp.104、113、118–119）
 4. **四種傳參方式**：formal parameter 綁到什麼、operand 何時求值，決定同一支程式的值（pp.130–137，第 24–26 張）
-5. **`type-of` 與 `value-of`**：同一個結構；if 算幾個分支、proc 的 body 何時處理，兩邊不同（第 27 張）
-6. **sound**：接受就保證 safe；代價是會拒絕一些執行時不會出錯的程式；`check` 接受的程式可能不終止（pp.234–238，第 28–30 張）
+5. **Lisp macro**：`and` 不能寫成 procedure，因為 operand 會先求值；macro 在編譯期把語法樹改寫成語法樹。C macro 替換 token，Lisp macro 改寫語法樹，而且有 hygiene（第 27–30 張）
+6. **`type-of` 與 `value-of`**：同一個結構；if 算幾個分支、proc 的 body 何時處理，兩邊不同（第 31 張）
+7. **sound**：接受就保證 safe；代價是會拒絕一些執行時不會出錯的程式；`check` 接受的程式可能不終止（pp.234–238，第 32–34 張）
 
 ---
 
@@ -661,7 +767,7 @@ class-14 的並排表：
 | well-typed | `type-of` 指派得出型別（p.238） |
 | cannot go wrong | sound：接受就保證沒有 type error（p.234） |
 
-第 2 堂第 30 張表的 5、6 就是例子：`check` 接受，`run` 時沒有 type error。
+第 2 堂第 34 張表的 5、6 就是例子：`check` 接受，`run` 時沒有 type error。
 
 ---
 
@@ -743,7 +849,7 @@ $ racket -i -t top.scm
 
 # 兩句話在哪裡交會？
 
-第 37–38 張：用有型別檢查的語言寫出一個直譯器，第一句的保證停在直譯器的邊界；被直譯的程式照樣會 go wrong。
+第 41–42 張：用有型別檢查的語言寫出一個直譯器，第一句的保證停在直譯器的邊界；被直譯的程式照樣會 go wrong。
 
 我的解讀：Greenspun 法則描述的，正是型別系統的保證怎麼被繞過。
 
@@ -805,7 +911,7 @@ spec 檢查的是執行時的值，不保證沒被檢查到的路徑；這和 Ch
 
 第 20 張的四列錯誤，加上 spec 與 json 欄位。「值的種類不對」在 LETREC 要等到執行時，Ch7 把它提前到執行前。
 
-<!-- 講者備註：圖是我畫的，img/check-timeline.svg（手寫 SVG）。各格屬於不同的直譯器或系統，彼此沒有先後關係，所以格子之間不畫箭頭。scan&parse、translator、extractor、對到錯的 declaration 四格來自 class-08 的表；type-of 來自 Ch7；spec 的 instrument 見第 40 張；json 欄位見第 44 張。 -->
+<!-- 講者備註：圖是我畫的，img/check-timeline.svg（手寫 SVG）。各格屬於不同的直譯器或系統，彼此沒有先後關係，所以格子之間不畫箭頭。scan&parse、translator、extractor、對到錯的 declaration 四格來自 class-08 的表；type-of 來自 Ch7；spec 的 instrument 見第 44 張；json 欄位見第 48 張。 -->
 
 ---
 
@@ -876,7 +982,7 @@ SELECT id FROM orders WHERE data ->> '$.coupon' IS NOT NULL;
 - schema 定在 attribute 上，沒有 table；attribute 名稱是 class-08 的 qualified keyword
 - 每個 entity 只寫自己有的 attribute；沒有的就不寫
 
-<!-- 講者備註：Datomic Peer API 的寫法，依 docs.datomic.com 的 schema 與 transaction 文件；課堂上沒有實測。attribute 本身也是用交易寫進資料庫的 entity，要先定義才能使用；所以第 44 張那種打錯的 :order/gfit-wrap，Datomic 寫入時就會拒絕（依文件）。 -->
+<!-- 講者備註：Datomic Peer API 的寫法，依 docs.datomic.com 的 schema 與 transaction 文件；課堂上沒有實測。attribute 本身也是用交易寫進資料庫的 entity，要先定義才能使用；所以第 48 張那種打錯的 :order/gfit-wrap，Datomic 寫入時就會拒絕（依文件）。 -->
 
 ---
 
@@ -894,7 +1000,7 @@ SELECT id FROM orders WHERE data ->> '$.coupon' IS NOT NULL;
 ```
 
 ```sql
--- the same question in SQL with a json column (slide 44)
+-- the same question in SQL with a json column (slide 48)
 SELECT id, data ->> '$.gift_wrap' FROM orders
  WHERE data ->> '$.gift_wrap' IS NOT NULL;
 ```
@@ -923,8 +1029,8 @@ SELECT id, data ->> '$.gift_wrap' FROM orders
 
 ![w:1120](img/sql-vs-datomic.svg)
 
-<!-- 講者備註：圖是我畫的，img/sql-vs-datomic.svg（手寫 SVG）。資料與第 45 張相同；第 44 張的訂單 44 打錯了 key，這裡當成沒有包裝也沒有折扣碼。
-左邊畫的是不用 json 欄位、直接把每種欄位開成一欄的做法；第 44 張的 json 欄位是另一種做法。
+<!-- 講者備註：圖是我畫的，img/sql-vs-datomic.svg（手寫 SVG）。資料與第 49 張相同；第 48 張的訂單 44 打錯了 key，這裡當成沒有包裝也沒有折扣碼。
+左邊畫的是不用 json 欄位、直接把每種欄位開成一欄的做法；第 48 張的 json 欄位是另一種做法。
 右邊的 101、102、103 等 entity id 是我編的；Datomic 的 datom 另外記寫入它的交易，這裡省略。虛線那一列的 :order/note 要先加進 schema 才能寫入。
 「一張很長的表」是我的比喻：Datomic 的 index 依 e、a、v 的不同順序排序，查詢時不必真的掃這張表。 -->
 ---
@@ -935,9 +1041,9 @@ SELECT id, data ->> '$.gift_wrap' FROM orders
 
 | Hickey 的說法 | SQL 這條路 | Clojure／Datomic 這條路 |
 |---|---|---|
-| 與其事後長出半套 Lisp | table 的形狀先定死；需求變動後，才在裡面另開 json 欄位、path 運算子、json 函式（第 43–44 張） | — |
+| 與其事後長出半套 Lisp | table 的形狀先定死；需求變動後，才在裡面另開 json 欄位、path 運算子、json 函式（第 47–48 張） | — |
 | 一開始就用設計良好的動態語言 | — | 程式本身就是資料；map 可以帶任意 key；Datomic 的 entity 可以帶任意 attribute，query 本身是一個 vector |
-| 再用 spec 把預期寫回去 | json 欄位裡的形狀沒人檢查 | Clojure：spec（第 40 張）；Datomic：attribute 的 `valueType`、entity spec 加 `:db/ensure` |
+| 再用 spec 把預期寫回去 | json 欄位裡的形狀沒人檢查 | Clojure：spec（第 44 張）；Datomic：attribute 的 `valueType`、entity spec 加 `:db/ensure` |
 
 我的解讀：兩條路都有彈性。差別在彈性是事後補上的另一套語言，還是一開始就在語言與資料模型裡；檢查則在需要時再加上去。
 
@@ -966,9 +1072,10 @@ query 是資料的例子：(def base '[:find ?oid :where [?o :order/id ?oid]])�
 1. **Ch1–Ch3**：直譯器是一支程式；四台代表性的直譯器各改了四角度表的一格；lexical 與 dynamic binding 差在 body 用哪個環境（第 4–13 張）
 2. **value-of 與 apply-X**：`value-of` 對語法分派，`apply-X` 是各種執行時資料型別的 observer。這是我的解讀（第 14–17 張）
 3. **Ch4**：有了 assignment，共享才觀察得到，所以要有 store；Ref 放在 ExpVal 還是 DenVal、新 location 在哪裡配置，都是語言設計的選擇，四種傳參方式就是其中的例子（第 21–26 張）
-4. **Ch7**：`check` 接受的程式，執行時沒有 type error，但可能不終止；sound 的代價是拒絕一些不會出錯的程式（第 27–30、34 張）
-5. **Milner 與 Greenspun**：保證停在直譯器的邊界；被直譯的程式要另外檢查；Hickey 的回應是用 spec 把預期寫回去（第 33–42 張）
-6. **json 與 Datalog**：json 欄位是 SQL 裡另開的動態層；datom 的資料模型本身就容得下每筆欄位不同的資料。Clojure 與 Datomic 一開始就把 Greenspun 的三樣東西設計進去。這是我的解讀（第 43–49 張）
+4. **Lisp macro**：operand 要不要先求值，call-by-need 在執行期用 thunk 決定，macro 在編譯期改寫語法樹決定；Lisp macro 改寫語法樹、有 hygiene，C macro 只替換 token（第 27–30 張）
+5. **Ch7**：`check` 接受的程式，執行時沒有 type error，但可能不終止；sound 的代價是拒絕一些不會出錯的程式（第 31–34、38 張）
+6. **Milner 與 Greenspun**：保證停在直譯器的邊界；被直譯的程式要另外檢查；Hickey 的回應是用 spec 把預期寫回去（第 37–46 張）
+7. **json 與 Datalog**：json 欄位是 SQL 裡另開的動態層；datom 的資料模型本身就容得下每筆欄位不同的資料。Clojure 與 Datomic 一開始就把 Greenspun 的三樣東西設計進去。這是我的解讀（第 47–53 張）
 
 ---
 
